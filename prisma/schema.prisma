@@ -1,0 +1,389 @@
+// E Sakhi — Prisma schema
+//
+// See docs/data-model.md for the full design rationale. This file is the
+// executable source of truth for the database structure; docs/data-model.md
+// is the human-readable rationale, kept in sync with it.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums — fixed, controlled vocabularies. See docs/data-model.md §2.
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  USER
+  ADMIN
+
+  @@map("user_role")
+}
+
+enum VerificationStatus {
+  VERIFIED
+  PARTIALLY_VERIFIED
+  UNVERIFIED
+  NEEDS_REVIEW
+  UNKNOWN
+  ASSUMED
+
+  @@map("verification_status")
+}
+
+enum StationStatus {
+  ACTIVE
+  INACTIVE
+  UNKNOWN
+
+  @@map("station_status")
+}
+
+enum ChargerAvailability {
+  AVAILABLE
+  BUSY
+  UNAVAILABLE
+  UNKNOWN
+
+  @@map("charger_availability")
+}
+
+enum ChargingMode {
+  AC
+  DC
+  UNKNOWN
+
+  @@map("charging_mode")
+}
+
+enum VehicleType {
+  CAR
+  SCOOTER
+  MOTORCYCLE
+  OTHER
+
+  @@map("vehicle_type")
+}
+
+enum ReportType {
+  WRONG_LOCATION
+  WRONG_CONNECTOR
+  WRONG_POWER
+  STATION_UNAVAILABLE
+  WRONG_CONTACT
+  DUPLICATE_STATION
+  OTHER
+
+  @@map("report_type")
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWING
+  RESOLVED
+  REJECTED
+
+  @@map("report_status")
+}
+
+// ---------------------------------------------------------------------------
+// Users & auth
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(USER)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  favorites        Favorite[]
+  reviews          Review[]
+  reports          Report[]
+  verificationLogs VerificationLog[] @relation("VerificationLogAdmin")
+  deletedStations  Station[]         @relation("StationDeletedBy")
+  deletedChargers  Charger[]         @relation("ChargerDeletedBy")
+
+  @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// Operators
+// ---------------------------------------------------------------------------
+
+model Operator {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  contact   String?
+  website   String?
+  logo      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  stations Station[]
+
+  @@map("operators")
+}
+
+// ---------------------------------------------------------------------------
+// Connectors — lookup table + alias table, not a hard enum.
+// See docs/data-model.md §3 for why.
+// ---------------------------------------------------------------------------
+
+model Connector {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  label     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  aliases           ConnectorAlias[]
+  chargerConnectors ChargerConnector[]
+  vehicleConnectors VehicleConnector[]
+
+  @@map("connectors")
+}
+
+model ConnectorAlias {
+  id          String   @id @default(cuid())
+  connectorId String   @map("connector_id")
+  aliasText   String   @map("alias_text")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  connector Connector @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+
+  @@unique([aliasText])
+  @@index([connectorId])
+  @@map("connector_aliases")
+}
+
+// ---------------------------------------------------------------------------
+// Stations
+// ---------------------------------------------------------------------------
+
+model Station {
+  id          String  @id @default(cuid())
+  stationId   String? @unique @map("station_id") // external/source id, e.g. "EVNP-0001"
+  stationName String  @map("station_name")
+  operatorId  String? @map("operator_id")
+
+  province String
+  district String
+  city     String
+  address  String
+  contact  String?
+
+  latitude  Decimal? @db.Decimal(9, 6)
+  longitude Decimal? @db.Decimal(9, 6)
+  mapUrl    String?  @map("map_url")
+
+  status StationStatus @default(UNKNOWN)
+
+  // -- verification --
+  verificationStatus   VerificationStatus @default(UNKNOWN) @map("verification_status")
+  assumptionFlag       Boolean            @default(false) @map("assumption_flag")
+  verificationSource   String?            @map("verification_source")
+  lastVerified         DateTime?          @map("last_verified")
+  locationVerified     Boolean            @default(false) @map("location_verified")
+  connectorVerified    Boolean            @default(false) @map("connector_verified")
+  powerVerified        Boolean            @default(false) @map("power_verified")
+  contactVerified      Boolean            @default(false) @map("contact_verified")
+  availabilityVerified Boolean            @default(false) @map("availability_verified")
+
+  // -- soft delete --
+  isDeleted   Boolean   @default(false) @map("is_deleted")
+  deletedAt   DateTime? @map("deleted_at")
+  deletedById String?   @map("deleted_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  operator  Operator? @relation(fields: [operatorId], references: [id])
+  deletedBy User?     @relation("StationDeletedBy", fields: [deletedById], references: [id])
+
+  chargers         Charger[]
+  favorites        Favorite[]
+  reviews          Review[]
+  reports          Report[]
+  verificationLogs VerificationLog[]
+
+  @@index([province])
+  @@index([district])
+  @@index([city])
+  @@index([status])
+  @@index([verificationStatus])
+  @@index([operatorId])
+  @@index([isDeleted])
+  @@map("stations")
+}
+
+// ---------------------------------------------------------------------------
+// Chargers / plugs — one row per physical plug, never merged.
+// A charger may offer more than one connector type (e.g. a combo CCS2/GB/T
+// head), hence the many-to-many ChargerConnector join table rather than a
+// single connectorId FK.
+// ---------------------------------------------------------------------------
+
+model Charger {
+  id        String  @id @default(cuid())
+  stationId String  @map("station_id")
+  plugId    String? @unique @map("plug_id") // external/source plug identifier
+
+  chargingMode ChargingMode        @default(UNKNOWN) @map("charging_mode")
+  powerKw      Decimal?            @map("power_kw") @db.Decimal(6, 2)
+  vehicleType  VehicleType?        @map("vehicle_type")
+  availability ChargerAvailability @default(UNKNOWN)
+
+  isDeleted   Boolean   @default(false) @map("is_deleted")
+  deletedAt   DateTime? @map("deleted_at")
+  deletedById String?   @map("deleted_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  station   Station @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  deletedBy User?   @relation("ChargerDeletedBy", fields: [deletedById], references: [id])
+
+  connectors ChargerConnector[]
+
+  @@index([stationId])
+  @@index([chargingMode])
+  @@index([isDeleted])
+  @@map("chargers")
+}
+
+model ChargerConnector {
+  id          String @id @default(cuid())
+  chargerId   String @map("charger_id")
+  connectorId String @map("connector_id")
+
+  charger   Charger   @relation(fields: [chargerId], references: [id], onDelete: Cascade)
+  connector Connector @relation(fields: [connectorId], references: [id], onDelete: Restrict)
+
+  @@unique([chargerId, connectorId])
+  @@index([connectorId])
+  @@map("charger_connectors")
+}
+
+// ---------------------------------------------------------------------------
+// Vehicles
+// ---------------------------------------------------------------------------
+
+model Vehicle {
+  id                 String      @id @default(cuid())
+  brand              String
+  model              String
+  vehicleType        VehicleType @map("vehicle_type")
+  batteryCapacityKwh Decimal     @map("battery_capacity_kwh") @db.Decimal(6, 2)
+  maxDcPowerKw       Decimal?    @map("max_dc_power_kw") @db.Decimal(6, 2)
+  maxAcPowerKw       Decimal?    @map("max_ac_power_kw") @db.Decimal(6, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  connectors VehicleConnector[]
+
+  @@unique([brand, model])
+  @@map("vehicles")
+}
+
+model VehicleConnector {
+  id          String @id @default(cuid())
+  vehicleId   String @map("vehicle_id")
+  connectorId String @map("connector_id")
+
+  vehicle   Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  connector Connector @relation(fields: [connectorId], references: [id], onDelete: Restrict)
+
+  @@unique([vehicleId, connectorId])
+  @@index([connectorId])
+  @@map("vehicle_connectors")
+}
+
+// ---------------------------------------------------------------------------
+// Favorites
+// ---------------------------------------------------------------------------
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  stationId String   @map("station_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  station Station @relation(fields: [stationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, stationId])
+  @@index([stationId])
+  @@map("favorites")
+}
+
+// ---------------------------------------------------------------------------
+// Reviews — one active review per user per station. Ratings are always
+// computed from these rows at query time; never hand-maintained elsewhere.
+// ---------------------------------------------------------------------------
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  stationId String   @map("station_id")
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  station Station @relation(fields: [stationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, stationId])
+  @@index([stationId])
+  @@map("reviews")
+}
+
+// ---------------------------------------------------------------------------
+// Reports
+// ---------------------------------------------------------------------------
+
+model Report {
+  id          String       @id @default(cuid())
+  userId      String       @map("user_id")
+  stationId   String       @map("station_id")
+  reportType  ReportType   @map("report_type")
+  description String?
+  status      ReportStatus @default(PENDING)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  resolvedAt  DateTime?    @map("resolved_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  station Station @relation(fields: [stationId], references: [id], onDelete: Cascade)
+
+  @@index([stationId])
+  @@index([status])
+  @@map("reports")
+}
+
+// ---------------------------------------------------------------------------
+// Verification audit log — admin-only, never exposed to ordinary users.
+// ---------------------------------------------------------------------------
+
+model VerificationLog {
+  id           String   @id @default(cuid())
+  stationId    String   @map("station_id")
+  adminId      String?  @map("admin_id")
+  fieldChanged String   @map("field_changed")
+  oldValue     String?  @map("old_value")
+  newValue     String?  @map("new_value")
+  notes        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  station Station @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  admin   User?   @relation("VerificationLogAdmin", fields: [adminId], references: [id])
+
+  @@index([stationId])
+  @@map("verification_logs")
+}

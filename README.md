@@ -4,7 +4,7 @@
 
 E Sakhi is a smart Electric Vehicle (EV) charging-station discovery and recommendation platform focused primarily on Nepal. It helps EV drivers find charging stations, understand which chargers actually fit their vehicle, estimate charging time, and get station recommendations that account for compatibility, distance, power, availability, rating, and how well-verified the station's data actually is.
 
-> **Status:** early development (Part 00 — architecture lock). No application code exists yet; this README describes the target system as it is being built, part by part. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
+> **Status:** early development (through Part 02 — database + initial dataset). The project foundation, database schema, and the real initial dataset (460 stations / 517 chargers) are live; most user-facing features (map, search, calculator, recommendations, auth) are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
 
 ---
 
@@ -65,32 +65,36 @@ Plus `Operator`, `Vehicle` (with multi-connector compatibility), `User`, `Favori
 
 ## Getting Started
 
-Application scaffolding (Part 01) hasn't landed yet, so there's no `npm install`/`npm run dev` to run at this stage. Once it does, this section will cover:
+Prerequisites: Node.js 20+, PostgreSQL 16+ (developed against 17).
 
-- Prerequisites (Node.js version, PostgreSQL)
-- `npm install`
-- Environment variables (below)
-- Database setup (`npx prisma migrate dev`, seeding)
-- `npm run dev`
+```bash
+npm install
+cp .env.example .env   # then fill in DATABASE_URL at minimum
+npx prisma migrate dev
+npm run db:seed
+npm run dev
+```
+
+Auth (Part 03) and most feature pages aren't built yet, so `npm run dev` currently serves the home page plus placeholder `/map` and `/stations` pages.
 
 ### Environment Variables
 
-Anticipated variables (finalized at Part 01, documented for real in `.env.example`):
+See `.env.example` for the full list with placeholder values. The one required for anything database-related:
 
 ```text
-DATABASE_URL=              # PostgreSQL connection string
-AUTH_SECRET=                # Auth.js session secret
-NEXT_PUBLIC_MAP_TILE_URL=    # OpenStreetMap-compatible tile endpoint
-NEXT_PUBLIC_APP_URL=          # Public base URL
-ADMIN_SEED_EMAIL=              # Used only by the one-time admin seed script
-ADMIN_SEED_PASSWORD=
+DATABASE_URL=   # PostgreSQL connection string, e.g.
+                # postgresql://postgres:postgres@localhost:5432/e_sakhi?schema=public
 ```
 
-No real secrets are ever committed. `.env` / `.env.local` are git-ignored from Part 01 onward; `.env.example` documents variable names only.
+`AUTH_SECRET`, `NEXT_PUBLIC_MAP_TILE_URL`, and the `ADMIN_SEED_*` vars are read by later parts (03/05) and can stay blank for now. No real secrets are ever committed — `.env` / `.env.local` are git-ignored; `.env.example` documents variable names only.
+
+**Note on Prisma 7:** the database connection is configured in `prisma.config.ts` (which reads `DATABASE_URL`) rather than in `prisma/schema.prisma` — Prisma 7 moved connection config out of the schema file. The Prisma Client is constructed with an explicit `@prisma/adapter-pg` driver adapter (see `src/lib/db/prisma.ts`), not an implicit URL.
 
 ### Excel Data Import
 
-The initial dataset is imported from an Excel file (~460 stations / ~517 plug records) via a repeatable, auditable seed/import process — see [docs/data-model.md](docs/data-model.md) and (once written, in Part 14) `docs/data-import.md`. The import pipeline never blindly overwrites admin-verified data: conflicts between imported and existing verified values are surfaced for explicit admin approval.
+The initial dataset (460 stations / 517 plugs, exactly matching the project brief) is imported from `prisma/seed-data/e-sakhi-data.xlsx` — a committed copy of the source spreadsheet, so `npm run db:seed` is reproducible without depending on a path outside the repo. The mapping from source columns to database fields, and every judgment call involved (verification-status resolution, the `CCS2;GB/T` combo-connector finding, why coordinates are `NULL` for every station, etc.), is documented in [docs/data-model.md §8](docs/data-model.md#8-part-02-addendum--what-the-real-dataset-actually-looks-like).
+
+`prisma/seed.ts` is idempotent (safe to re-run) and never overwrites a station's verification fields or a charger's availability on re-run — but it is a *bootstrap* script, not the admin-facing conflict-detection/approval tool described for Part 14. Verify a fresh import with `npm run db:verify`.
 
 ### Admin Access
 
@@ -101,8 +105,8 @@ There is no public sign-up path to the `ADMIN` role. The first administrator is 
 Built incrementally, in the order below. Each part is tested, committed, and left in a runnable state before the next begins.
 
 - [x] **Part 00** — Architecture and requirements lock *(this document + `docs/architecture.md` + `docs/data-model.md`)*
-- [ ] Part 01 — Project foundation (Next.js app, layout, home page)
-- [ ] Part 02 — Database schema + Excel dataset import
+- [x] **Part 01** — Project foundation (Next.js app, layout, home page)
+- [x] **Part 02** — Database schema + Excel dataset import *(460 stations / 517 chargers seeded; see `docs/data-model.md §8`)*
 - [ ] Part 03 — Authentication
 - [ ] Part 04 — Station API
 - [ ] Part 05 — Interactive map
