@@ -77,12 +77,13 @@ e-sakhi/
 
 ## 3. Authentication Approach
 
-- **Library:** Auth.js (NextAuth v5), Credentials provider backed by Prisma.
-- **Passwords:** hashed with bcrypt before storage; never logged, never returned by any API.
-- **Sessions:** server-side session/JWT via Auth.js; the session payload carries `userId` and `role` only.
-- **Roles:** `USER` and `ADMIN`, stored on the `User` row (see data model). Registration **always** creates `USER`. There is no client-controllable way to request `ADMIN`.
-- **First admin:** created via a seed script (`prisma/seed.ts`, run manually with an explicit admin email/password from environment variables) or by directly promoting a user's `role` in the database. Never via the public UI.
-- **Authorization enforcement:** every protected route and every mutating API route re-checks the session and role **on the server** (in the Route Handler / Server Action / middleware), regardless of what the UI hides. Hiding a button is a UX nicety, never a security boundary.
+- **Library:** Auth.js (NextAuth v5, `next-auth@5.0.0-beta.32` — pinned exact; still on the `beta` npm tag but the version actually in wide production use, not experimental in practice), Credentials provider. No database adapter: Credentials + JWT sessions don't need Auth.js's Account/Session/VerificationToken tables (those exist for OAuth/database-session strategies), so `User.password_hash`/`role` on our own schema is the entire persistence story — see `src/lib/auth/auth.ts`.
+- **Passwords:** hashed with `bcryptjs` (pure JS — no native build step, avoiding the install-script friction native `bcrypt` hit on this Windows machine in Part 02) before storage; never logged, never returned by any API.
+- **Sessions:** an httpOnly, signed JWT cookie via Auth.js; the token/session payload carries only `id` and `role` (via the `jwt`/`session` callbacks in `auth.ts`) — never the password hash or other PII.
+- **Roles:** `USER` and `ADMIN`, stored on the `User` row (see data model). Registration **always** creates `USER` — the register Server Action (`src/app/register/actions.ts`) never reads a `role` field from form input, full stop. There is no client-controllable way to request `ADMIN`.
+- **First admin:** created via `scripts/create-admin.ts` (`npm run db:create-admin`), driven by `ADMIN_SEED_EMAIL`/`ADMIN_SEED_PASSWORD` in `.env`. Idempotent: promotes an existing matching user to `ADMIN` without touching their password, or creates a new `ADMIN` account if the email doesn't exist yet. Never via the public UI.
+- **Route protection file is `proxy.ts`, not `middleware.ts`.** Next.js 16 renamed the middleware file convention to Proxy (`node_modules/next/dist/docs/.../file-conventions/proxy.md`) — this project's version of that file is `src/proxy.ts` (next to `src/app`, per that doc's placement rule), doing an *optimistic* cookie-only check: redirect unauthenticated requests away from `/profile`/`/admin/**`, redirect non-admins away from `/admin/**`, redirect already-logged-in visitors away from `/login`/`/register`. Proxy now defaults to the Node.js runtime (Next.js 16 changed this too), so there was no need for the classic Auth.js edge-safe-config split.
+- **Authorization enforcement:** every protected route and every mutating Server Action/Route Handler re-checks the session and role **on the server**, via `requireUser()`/`requireAdmin()` in `src/lib/auth/session.ts` (a Data Access Layer, per the Next.js auth guide), regardless of what the UI hides or what Proxy already redirected. This isn't optional belt-and-suspenders — Next.js's own docs explicitly warn that a Proxy `matcher` that excludes a path also skips Server Actions called from that path, so Proxy is never the only check.
 - **Ownership checks:** any action that touches a `Favorite`, `Review`, or `Profile` row must verify the row's `user_id` equals the authenticated session's `userId` before mutating it. The client-submitted user id, if any, is never trusted.
 
 ---

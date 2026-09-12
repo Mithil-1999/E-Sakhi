@@ -4,7 +4,7 @@
 
 E Sakhi is a smart Electric Vehicle (EV) charging-station discovery and recommendation platform focused primarily on Nepal. It helps EV drivers find charging stations, understand which chargers actually fit their vehicle, estimate charging time, and get station recommendations that account for compatibility, distance, power, availability, rating, and how well-verified the station's data actually is.
 
-> **Status:** early development (through Part 02 — database + initial dataset). The project foundation, database schema, and the real initial dataset (460 stations / 517 chargers) are live; most user-facing features (map, search, calculator, recommendations, auth) are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
+> **Status:** early development (through Part 03 — authentication). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), and registration/login/logout/role-based access are live; most user-facing features (map, search, calculator, recommendations) are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
 
 ---
 
@@ -69,24 +69,26 @@ Prerequisites: Node.js 20+, PostgreSQL 16+ (developed against 17).
 
 ```bash
 npm install
-cp .env.example .env   # then fill in DATABASE_URL at minimum
+cp .env.example .env   # then fill in DATABASE_URL and AUTH_SECRET at minimum
 npx prisma migrate dev
 npm run db:seed
 npm run dev
 ```
 
-Auth (Part 03) and most feature pages aren't built yet, so `npm run dev` currently serves the home page plus placeholder `/map` and `/stations` pages.
+Most feature pages (map, search, calculator, recommendations) aren't built yet, so `npm run dev` currently serves the home page, placeholder `/map` and `/stations` pages, and working `/login`, `/register`, `/profile`, and `/admin` (stub) pages.
 
 ### Environment Variables
 
-See `.env.example` for the full list with placeholder values. The one required for anything database-related:
+See `.env.example` for the full list with placeholder values. Required for local dev:
 
 ```text
 DATABASE_URL=   # PostgreSQL connection string, e.g.
                 # postgresql://postgres:postgres@localhost:5432/e_sakhi?schema=public
+AUTH_SECRET=    # Auth.js session-signing secret — generate with:
+                # node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-`AUTH_SECRET`, `NEXT_PUBLIC_MAP_TILE_URL`, and the `ADMIN_SEED_*` vars are read by later parts (03/05) and can stay blank for now. No real secrets are ever committed — `.env` / `.env.local` are git-ignored; `.env.example` documents variable names only.
+`NEXT_PUBLIC_MAP_TILE_URL` is read by a later part (05) and can stay blank for now. No real secrets are ever committed — `.env` / `.env.local` are git-ignored; `.env.example` documents variable names only.
 
 **Note on Prisma 7:** the database connection is configured in `prisma.config.ts` (which reads `DATABASE_URL`) rather than in `prisma/schema.prisma` — Prisma 7 moved connection config out of the schema file. The Prisma Client is constructed with an explicit `@prisma/adapter-pg` driver adapter (see `src/lib/db/prisma.ts`), not an implicit URL.
 
@@ -96,9 +98,16 @@ The initial dataset (460 stations / 517 plugs, exactly matching the project brie
 
 `prisma/seed.ts` is idempotent (safe to re-run) and never overwrites a station's verification fields or a charger's availability on re-run — but it is a *bootstrap* script, not the admin-facing conflict-detection/approval tool described for Part 14. Verify a fresh import with `npm run db:verify`.
 
-### Admin Access
+### Authentication
 
-There is no public sign-up path to the `ADMIN` role. The first administrator is created via a one-time seed script or a direct, deliberate database promotion — never through the registration form.
+Auth.js (NextAuth v5) with a Credentials provider, `bcryptjs` password hashing, and JWT sessions. There is no public sign-up path to the `ADMIN` role — `/register` always creates a `USER`. Create (or promote) the first administrator with:
+
+```bash
+# Set ADMIN_SEED_EMAIL and ADMIN_SEED_PASSWORD in .env first
+npm run db:create-admin
+```
+
+Safe to re-run: if that email already has an account, it's promoted to `ADMIN` without touching its password; otherwise a new `ADMIN` account is created. Route protection lives in `src/proxy.ts` — note that's Next.js 16's renamed `middleware.ts` convention (see `docs/architecture.md §3`), not a typo.
 
 ## Development Roadmap
 
@@ -107,7 +116,7 @@ Built incrementally, in the order below. Each part is tested, committed, and lef
 - [x] **Part 00** — Architecture and requirements lock *(this document + `docs/architecture.md` + `docs/data-model.md`)*
 - [x] **Part 01** — Project foundation (Next.js app, layout, home page)
 - [x] **Part 02** — Database schema + Excel dataset import *(460 stations / 517 chargers seeded; see `docs/data-model.md §8`)*
-- [ ] Part 03 — Authentication
+- [x] **Part 03** — Authentication *(Auth.js v5, Credentials + bcryptjs, `/login` `/register` `/profile`, role-based route protection)*
 - [ ] Part 04 — Station API
 - [ ] Part 05 — Interactive map
 - [ ] Part 06 — Search + filters

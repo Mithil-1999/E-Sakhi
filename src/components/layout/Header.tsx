@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Shield } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { Container } from "@/components/ui/Container";
+import { LogoutButton } from "@/components/features/LogoutButton";
+import type { SessionUser } from "@/lib/auth/session";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -12,7 +14,7 @@ const navLinks = [
   { href: "/stations", label: "Find Chargers" },
 ];
 
-export function Header() {
+export function Header({ user }: { user: SessionUser | null }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
@@ -34,6 +36,10 @@ export function Header() {
             </Link>
           ))}
         </nav>
+
+        <div className="hidden items-center gap-4 md:flex">
+          <AuthLinks user={user} />
+        </div>
 
         <button
           type="button"
@@ -68,9 +74,54 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
+            <div className="mt-2 flex flex-col gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
+              <AuthLinks user={user} stacked />
+            </div>
           </Container>
         </nav>
       )}
     </header>
+  );
+}
+
+function AuthLinks({ user, stacked = false }: { user: SessionUser | null; stacked?: boolean }) {
+  if (user) {
+    return (
+      <div className={stacked ? "flex flex-col gap-2" : "flex items-center gap-3"}>
+        {user.role === "ADMIN" && (
+          <Link
+            href="/admin"
+            className="inline-flex items-center gap-1 text-sm font-medium text-slate-700 hover:text-emerald-600 dark:text-slate-200 dark:hover:text-emerald-400"
+          >
+            <Shield className="h-4 w-4" aria-hidden="true" />
+            Admin
+          </Link>
+        )}
+        <Link
+          href="/profile"
+          className="text-sm font-medium text-slate-700 hover:text-emerald-600 dark:text-slate-200 dark:hover:text-emerald-400"
+        >
+          {user.name ?? "Profile"}
+        </Link>
+        <LogoutButton />
+      </div>
+    );
+  }
+
+  return (
+    <div className={stacked ? "flex flex-col gap-2" : "flex items-center gap-3"}>
+      <Link
+        href="/login"
+        className="text-sm font-medium text-slate-700 hover:text-emerald-600 dark:text-slate-200 dark:hover:text-emerald-400"
+      >
+        Log in
+      </Link>
+      <Link
+        href="/register"
+        className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+      >
+        Sign up
+      </Link>
+    </div>
   );
 }
