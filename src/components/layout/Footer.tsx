@@ -9,6 +9,7 @@ const footerLinks = [
       { href: "/map", label: "Map" },
       { href: "/stations", label: "Find Chargers" },
       { href: "/charging-calculator", label: "Charging Calculator" },
+      { href: "/recommendations", label: "Recommendations" },
     ],
   },
   {

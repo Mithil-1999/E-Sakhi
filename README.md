@@ -4,7 +4,7 @@
 
 E Sakhi is a smart Electric Vehicle (EV) charging-station discovery and recommendation platform focused primarily on Nepal. It helps EV drivers find charging stations, understand which chargers actually fit their vehicle, estimate charging time, and get station recommendations that account for compatibility, distance, power, availability, rating, and how well-verified the station's data actually is.
 
-> **Status:** early development (through Part 08 — charging calculator). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle API, an interactive Nepal map, a full search/filter station list, station detail pages, and a charging calculator are live; recommendations, favorites, and admin tooling are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
+> **Status:** early development (through Part 09 — smart recommendation engine). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle API, an interactive Nepal map, a full search/filter station list, station detail pages, a charging calculator, and multi-factor station recommendations are live; favorites, reviews, and admin tooling are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
 
 ---
 
@@ -75,7 +75,7 @@ npm run db:seed
 npm run dev
 ```
 
-`npm run dev` currently serves the home page, a working `/map`, `/stations` (search/filters), `/stations/[id]` (station details), and `/charging-calculator`, plus `/login`, `/register`, `/profile`, and `/admin` (stub). The recommendation engine and user/admin dashboards aren't built yet.
+`npm run dev` currently serves the home page, a working `/map`, `/stations` (search/filters), `/stations/[id]` (station details), `/charging-calculator`, and `/recommendations`, plus `/login`, `/register`, `/profile`, and `/admin` (stub). User/admin dashboards and reviews/favorites aren't built yet.
 
 ### Environment Variables
 
@@ -123,6 +123,7 @@ All station data is served from the database through these endpoints — nothing
 | `GET /api/chargers` | Public | Read-only; filterable by `stationId`, `connector`, `chargingMode`. Charger/operator mutation endpoints arrive with admin station management (Part 12). |
 | `GET /api/operators` | Public | Read-only; includes each operator's active station count. |
 | `GET /api/vehicles` | Public | Read-only; optional `vehicleType` filter. Serves the seeded reference vehicle catalog (Part 08) that powers the charging calculator. |
+| `GET /api/recommendations` | Public | Read-only, `vehicleId` or manual `connector`/`maxAcPowerKw`/`maxDcPowerKw`, optional `latitude`/`longitude`, `limit` (max 50). Ranks real stations for a vehicle — see [docs/recommendation-engine.md](docs/recommendation-engine.md). |
 
 ### Testing the API
 
@@ -162,6 +163,16 @@ Try it: [`/stations?province=Bagmati`](http://localhost:3000/stations?province=B
 
 `GET /api/vehicles` (public, optional `vehicleType` filter) serves the same catalog the calculator uses.
 
+### Recommendations
+
+`/recommendations` ranks real, compatible stations for a vehicle — not just the nearest one. Full model locked in [docs/recommendation-engine.md](docs/recommendation-engine.md); in brief:
+
+1. **Hard eligibility first**: a station is excluded outright (not scored low) unless it has a non-deleted charger whose connector matches the vehicle, isn't confirmed unavailable, and the station itself isn't confirmed inactive.
+2. **Weighted scoring second**, over five factors (power/distance/rating/verification/availability) via one config object (`src/lib/config/recommendation-weights.ts`) — an unknown value always scores neutral-low, never as if it were good data.
+3. **Honest about today's data**: every one of the 460 seeded stations has `NULL` coordinates and there are no reviews yet, so distance/rating (and, per `docs/data-model.md §7`, availability) can't meaningfully differentiate results today — the summary banner on `/recommendations` states that with live counts (never a hard-coded claim), and compatibility + charging speed (reusing `getEffectiveChargingPowerKw()` from the Part 08 calculator) end up doing most of the ranking work until more data exists.
+
+`GET /api/recommendations` (public, `vehicleId` *or* manual `connector`/`maxAcPowerKw`/`maxDcPowerKw`, optional `latitude`/`longitude`) returns each result's full per-factor breakdown, not just a bare score.
+
 ## Development Roadmap
 
 Built incrementally, in the order below. Each part is tested, committed, and left in a runnable state before the next begins.
@@ -175,7 +186,7 @@ Built incrementally, in the order below. Each part is tested, committed, and lef
 - [x] **Part 06** — Search + filters *(server-rendered, URL-driven `/stations` search; power-range/vehicle-type/availability filters added to the Part 04 API; station cards; pagination)*
 - [x] **Part 07** — Station details *(`/stations/[id]`, embedded single-station map, full verification detail, honest Navigate/Call/Favorite/Report actions)*
 - [x] **Part 08** — Charging calculator *(`/charging-calculator`, `src/services/charging-calculator.ts`, seeded reference vehicle catalog, real-station-charger lookup)*
-- [ ] Part 09 — Smart recommendation engine
+- [x] **Part 09** — Smart recommendation engine *(`/recommendations`, `src/services/recommendation-engine.ts`, hard eligibility + weighted scoring over compatibility/distance/power/rating/verification/availability — model locked in `docs/recommendation-engine.md`)*
 - [ ] Part 10 — User dashboard, favorites
 - [ ] Part 11 — Admin dashboard
 - [ ] Part 12 — Admin station management

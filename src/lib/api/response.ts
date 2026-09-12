@@ -15,7 +15,14 @@ export type ApiMeta = {
   totalPages: number;
 };
 
-export function apiSuccess<T>(data: T, meta?: ApiMeta, status = 200) {
+/**
+ * Most list endpoints' meta is pagination-shaped (ApiMeta above); a few
+ * (e.g. GET /api/recommendations — see docs/recommendation-engine.md §5)
+ * legitimately need a different, still-documented meta shape instead.
+ * apiSuccess accepts either so those endpoints don't have to hand-roll
+ * their own NextResponse.json to stay inside the { data, meta } envelope.
+ */
+export function apiSuccess<T>(data: T, meta?: ApiMeta | Record<string, unknown>, status = 200) {
   return NextResponse.json(meta ? { data, meta } : { data }, { status });
 }
 

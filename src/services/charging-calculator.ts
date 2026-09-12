@@ -10,13 +10,23 @@
 
 export type ChargingMode = "AC" | "DC" | "UNKNOWN";
 
-export type CalculatorVehicleInput = {
-  /** Usable battery capacity, kWh. */
-  batteryCapacityKwh: number;
+/**
+ * Just the part of a vehicle's spec that determines charging speed — split
+ * out from CalculatorVehicleInput so getEffectiveChargingPowerKw() can be
+ * reused (Part 09's recommendation engine, `src/services/
+ * recommendation-engine.ts`) without needing a battery capacity, which
+ * only the time/energy estimate below needs.
+ */
+export type VehiclePowerProfile = {
   /** Vehicle's own max AC acceptance rate, kW — null if not on record. */
   maxAcPowerKw: number | null;
   /** Vehicle's own max DC acceptance rate, kW — null if not on record. */
   maxDcPowerKw: number | null;
+};
+
+export type CalculatorVehicleInput = VehiclePowerProfile & {
+  /** Usable battery capacity, kWh. */
+  batteryCapacityKwh: number;
 };
 
 export type CalculatorChargerInput = {
@@ -24,6 +34,39 @@ export type CalculatorChargerInput = {
   /** Charger's own max output, kW — null if not on record. */
   powerKw: number | null;
 };
+
+export type EffectivePowerResult =
+  | { ok: true; effectivePowerKw: number; limitingFactor: "vehicle" | "charger" }
+  | { ok: false; reason: "mode_unknown" | "vehicle_max_unknown" | "charger_power_unknown" };
+
+/**
+ * The core "how fast can this vehicle actually charge here" rule, shared
+ * by the time estimate below and the recommendation engine's power score:
+ * min(vehicle's max acceptance for the charger's mode, charger's max
+ * output) — never invented when either side isn't on record.
+ */
+export function getEffectiveChargingPowerKw(
+  vehicle: VehiclePowerProfile,
+  charger: CalculatorChargerInput
+): EffectivePowerResult {
+  if (charger.chargingMode === "UNKNOWN") {
+    return { ok: false, reason: "mode_unknown" };
+  }
+
+  const vehicleMaxKw = charger.chargingMode === "AC" ? vehicle.maxAcPowerKw : vehicle.maxDcPowerKw;
+  if (vehicleMaxKw === null) {
+    return { ok: false, reason: "vehicle_max_unknown" };
+  }
+  if (charger.powerKw === null) {
+    return { ok: false, reason: "charger_power_unknown" };
+  }
+
+  return {
+    ok: true,
+    effectivePowerKw: Math.min(vehicleMaxKw, charger.powerKw),
+    limitingFactor: vehicleMaxKw <= charger.powerKw ? "vehicle" : "charger",
+  };
+}
 
 export type CalculatorInput = {
   vehicle: CalculatorVehicleInput;
@@ -96,61 +139,34 @@ export function calculateChargingEstimate(
     2
   );
 
-  // Never invented: a charger whose AC/DC mode isn't on record can't be
-  // matched against a vehicle's max power for "the right" mode.
-  if (charger.chargingMode === "UNKNOWN") {
+  const effective = getEffectiveChargingPowerKw(vehicle, charger);
+
+  if (!effective.ok) {
+    const note =
+      effective.reason === "mode_unknown"
+        ? "This charger's charging mode (AC or DC) isn't on record, so charging speed and time can't be estimated."
+        : effective.reason === "vehicle_max_unknown"
+          ? `This vehicle's maximum ${charger.chargingMode} charging power isn't on record, so charging speed and time can't be estimated.`
+          : "This charger's power rating isn't on record, so charging time can't be estimated.";
+
     return {
       ok: true,
-      data: {
-        energyRequiredKwh,
-        effectivePowerKw: null,
-        estimatedMinutes: null,
-        limitingFactor: null,
-        note: "This charger's charging mode (AC or DC) isn't on record, so charging speed and time can't be estimated.",
-      },
+      data: { energyRequiredKwh, effectivePowerKw: null, estimatedMinutes: null, limitingFactor: null, note },
     };
   }
 
-  const vehicleMaxKw = charger.chargingMode === "AC" ? vehicle.maxAcPowerKw : vehicle.maxDcPowerKw;
-
-  if (vehicleMaxKw === null) {
-    return {
-      ok: true,
-      data: {
-        energyRequiredKwh,
-        effectivePowerKw: null,
-        estimatedMinutes: null,
-        limitingFactor: null,
-        note: `This vehicle's maximum ${charger.chargingMode} charging power isn't on record, so charging speed and time can't be estimated.`,
-      },
-    };
-  }
-
-  if (charger.powerKw === null) {
-    return {
-      ok: true,
-      data: {
-        energyRequiredKwh,
-        effectivePowerKw: null,
-        estimatedMinutes: null,
-        limitingFactor: null,
-        note: "This charger's power rating isn't on record, so charging time can't be estimated.",
-      },
-    };
-  }
-
-  const effectivePowerKw = Math.min(vehicleMaxKw, charger.powerKw);
-  const limitingFactor: "vehicle" | "charger" = vehicleMaxKw <= charger.powerKw ? "vehicle" : "charger";
   const estimatedMinutes =
-    effectivePowerKw > 0 ? Math.round((energyRequiredKwh / effectivePowerKw) * 60) : null;
+    effective.effectivePowerKw > 0
+      ? Math.round((energyRequiredKwh / effective.effectivePowerKw) * 60)
+      : null;
 
   return {
     ok: true,
     data: {
       energyRequiredKwh,
-      effectivePowerKw: round(effectivePowerKw, 2),
+      effectivePowerKw: round(effective.effectivePowerKw, 2),
       estimatedMinutes,
-      limitingFactor: estimatedMinutes === null ? null : limitingFactor,
+      limitingFactor: estimatedMinutes === null ? null : effective.limitingFactor,
       note: null,
     },
   };
