@@ -420,8 +420,14 @@ export function AdminStationForm(props: AdminStationFormProps) {
           </div>
         </section>
 
-        {/* Verification */}
-        <section className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+        {/* Verification — id="verification" is a real anchor target: the
+            verification queue (Part 13, /admin/verification) links its
+            "Edit" action straight here (`#verification`) instead of
+            duplicating this section. */}
+        <section
+          id="verification"
+          className="scroll-mt-20 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
+        >
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Verification</h2>
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>

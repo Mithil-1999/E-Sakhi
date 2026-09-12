@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, History } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { AdminStationForm } from "@/components/features/admin/AdminStationForm";
 import { AdminChargerManager } from "@/components/features/admin/AdminChargerManager";
+import { VerificationLogTable } from "@/components/features/admin/VerificationLogTable";
 import { requireAdmin } from "@/lib/auth/session";
 import { getStationById } from "@/services/station-service";
 import { listOperators } from "@/services/operator-service";
+import { getVerificationLogForStation } from "@/services/admin-verification-service";
 import type { AdminStationDetail } from "@/types/admin";
 
 export const metadata: Metadata = {
@@ -24,9 +26,10 @@ export default async function EditStationPage({ params }: PageProps<"/admin/stat
   // includeDeleted: true — an admin managing stations needs to be able to
   // open a soft-deleted one (from the "Show soft-deleted" list toggle) to
   // see its state, even though AdminStationForm then disables editing it.
-  const [station, { data: operators }] = await Promise.all([
+  const [station, { data: operators }, verificationLog] = await Promise.all([
     getStationById(id, true),
     listOperators({ page: 1, pageSize: 100 }),
+    getVerificationLogForStation(id),
   ]);
 
   if (!station) {
@@ -103,6 +106,21 @@ export default async function EditStationPage({ params }: PageProps<"/admin/stat
         {!clientStation.isDeleted && (
           <AdminChargerManager stationId={clientStation.id} initialChargers={clientStation.chargers} />
         )}
+
+        {/* Full history for this one station — the admin dashboard's
+            (Part 11) feed is platform-wide and capped at 15; this is
+            everything on record for this station, via the verification
+            queue (Part 13). */}
+        <section
+          id="history"
+          className="scroll-mt-20 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
+        >
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
+            <History className="h-5 w-5 text-emerald-600" aria-hidden="true" />
+            Verification history
+          </h2>
+          <VerificationLogTable rows={verificationLog} emptyMessage="No verification changes have been logged for this station yet." />
+        </section>
       </div>
     </Container>
   );

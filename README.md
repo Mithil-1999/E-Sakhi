@@ -4,7 +4,7 @@
 
 E Sakhi is a smart Electric Vehicle (EV) charging-station discovery and recommendation platform focused primarily on Nepal. It helps EV drivers find charging stations, understand which chargers actually fit their vehicle, estimate charging time, and get station recommendations that account for compatibility, distance, power, availability, rating, and how well-verified the station's data actually is.
 
-> **Status:** early development (through Part 12 — admin station management). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle/favorites API, an interactive Nepal map, a full search/filter station list, station detail pages, a charging calculator, multi-factor station recommendations, real per-user favorites (`/dashboard`, `/my-favorites`), a live admin overview (`/admin`), and real admin station/charger management (`/admin/stations`) are live; reviews and the data verification workflow are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
+> **Status:** early development (through Part 13 — data verification dashboard). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle/favorites API, an interactive Nepal map, a full search/filter station list, station detail pages, a charging calculator, multi-factor station recommendations, real per-user favorites (`/dashboard`, `/my-favorites`), a live admin overview (`/admin`), real admin station/charger management (`/admin/stations`), and a dedicated verification workflow (`/admin/verification`) are live; reviews and the Excel import/conflict tool are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
 
 ---
 
@@ -75,7 +75,7 @@ npm run db:seed
 npm run dev
 ```
 
-`npm run dev` currently serves the home page, a working `/map`, `/stations` (search/filters), `/stations/[id]` (station details), `/charging-calculator`, `/recommendations`, `/dashboard`, `/my-favorites`, plus `/login`, `/register`, `/profile`, a real `/admin` overview dashboard, and real admin station/charger management at `/admin/stations`. Reviews and the data verification workflow aren't built yet.
+`npm run dev` currently serves the home page, a working `/map`, `/stations` (search/filters), `/stations/[id]` (station details), `/charging-calculator`, `/recommendations`, `/dashboard`, `/my-favorites`, plus `/login`, `/register`, `/profile`, a real `/admin` overview dashboard, admin station/charger management at `/admin/stations`, and a verification workflow at `/admin/verification`. Reviews and the Excel import/conflict tool aren't built yet.
 
 ### Environment Variables
 
@@ -207,6 +207,15 @@ Real per-user favorites (Part 10) — the `Favorite` model has existed since Par
 - **Verification-field edits still write to `VerificationLog`** exactly as they did before this part — nothing about that mechanism changed, this just gives it a UI. Confirmed live on `/admin`'s Recent Activity feed.
 - **Operator management is explicitly out of scope here** — the station form picks from existing operators (`GET /api/operators`, Part 04) or leaves a station independent; creating/editing operators isn't built (no admin need for it yet, given the 14 real operators already in the seeded dataset).
 
+### Data Verification Dashboard
+
+`/admin/verification` (Part 13) is the verification-specific workflow the general `/admin/stations` list deliberately isn't — a queue, not a browser:
+
+- **Tabs, not a generic filter panel** — "Needs attention" (the default: `NEEDS_REVIEW` + `ASSUMED` + `UNVERIFIED` combined, the master brief's own framing of "low confidence"), each single `VerificationStatus` on its own, and "All" — each a live count pulled from the same aggregate `/admin` already computes, and each a plain link (`?tab=...`), no client JS.
+- **Review happens in the queue itself** — every row renders that station's full verification state inline (status, source, last-verified date, the same five-item checklist the public station detail page shows, via a newly-shared `VerificationChecklist` component) so an admin can scan many stations without a click per station.
+- **Editing reuses Part 12's form, not a second one** — "Review & edit verification" links straight to `/admin/stations/[id]/edit#verification`, that page's existing Verification section. No new mutation path was added; `updateStation()` (Part 04) and its automatic `VerificationLog` write are untouched.
+- **A station's full history**, not just the dashboard's platform-wide last-15 — the station edit page now has its own "Verification history" section showing everything on record for that one station. The table itself (`VerificationLogTable`) is shared with `/admin`'s recent-activity feed rather than a second implementation.
+
 ## Development Roadmap
 
 Built incrementally, in the order below. Each part is tested, committed, and left in a runnable state before the next begins.
@@ -224,7 +233,7 @@ Built incrementally, in the order below. Each part is tested, committed, and lef
 - [x] **Part 10** — User dashboard & favorites *(`/dashboard`, `/my-favorites`, real favorite/unfavorite from the station detail page and station cards, `GET/POST /api/favorites`, `DELETE /api/favorites/[stationId]`, ownership always derived from the session — never a client-submitted user id)*
 - [x] **Part 11** — Admin dashboard *(`/admin`, real-time station/charger/operator/user/favorite/review/report counts, verification-status distribution, recent `VerificationLog` activity — read-only reporting only; managing stations and the verification-approval workflow are Parts 12/13)*
 - [x] **Part 12** — Admin station management *(`/admin/stations`, `/admin/stations/new`, `/admin/stations/[id]/edit` — create/edit/soft-delete stations and their chargers/connectors through a real UI, built on Part 04's station API plus new `POST /api/chargers` / `PUT`&`DELETE /api/chargers/[id]`; coordinates stay honest — never defaulted or fabricated by the form)*
-- [ ] Part 13 — Data verification dashboard
+- [x] **Part 13** — Data verification dashboard *(`/admin/verification` — a queue of NEEDS_REVIEW/ASSUMED/UNVERIFIED stations with the full checklist rendered inline, linking to Part 12's existing edit form rather than a second one; a station's complete VerificationLog history, not just the dashboard's last-15 feed)*
 - [ ] Part 14 — Excel import/update tool
 - [ ] Part 15 — Reviews + reports
 - [ ] Part 16 — Final testing, security review, polish

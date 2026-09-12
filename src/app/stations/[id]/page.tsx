@@ -4,8 +4,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
-  CheckCircle2,
-  Circle,
   Flag,
   Info,
   MapPin,
@@ -18,6 +16,7 @@ import {
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { VerificationBadge } from "@/components/ui/VerificationBadge";
+import { VerificationChecklist } from "@/components/ui/VerificationChecklist";
 import { StationLocationMap } from "@/components/features/StationLocationMap";
 import { FavoriteButton } from "@/components/features/FavoriteButton";
 import { getStationById, type StationDetail } from "@/services/station-service";
@@ -103,14 +102,6 @@ export default async function StationDetailPage({ params }: PageProps<"/stations
   const navigateHref = hasCoordinates
     ? `https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}`
     : null;
-
-  const verificationChecks: { label: string; verified: boolean }[] = [
-    { label: "Location", verified: station.locationVerified },
-    { label: "Connectors", verified: station.connectorVerified },
-    { label: "Power", verified: station.powerVerified },
-    { label: "Contact", verified: station.contactVerified },
-    { label: "Availability", verified: station.availabilityVerified },
-  ];
 
   const linkClass =
     "inline-flex w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
@@ -280,25 +271,7 @@ export default async function StationDetailPage({ params }: PageProps<"/stations
                 </dd>
               </div>
             </dl>
-            <ul className="mt-4 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
-              {verificationChecks.map((check) => (
-                <li
-                  key={check.label}
-                  className={`flex items-center gap-1.5 rounded-md px-2 py-1 ${
-                    check.verified
-                      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-                      : "bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
-                  }`}
-                >
-                  {check.verified ? (
-                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  ) : (
-                    <Circle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  )}
-                  {check.label}
-                </li>
-              ))}
-            </ul>
+            <VerificationChecklist checks={station} className="mt-4" />
           </section>
         </div>
 

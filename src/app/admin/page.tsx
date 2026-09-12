@@ -14,12 +14,9 @@ import {
 } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { VerificationBadge } from "@/components/ui/VerificationBadge";
+import { VerificationLogTable } from "@/components/features/admin/VerificationLogTable";
 import { requireAdmin } from "@/lib/auth/session";
-import {
-  getAdminDashboardStats,
-  getRecentVerificationActivity,
-  labelForField,
-} from "@/services/admin-dashboard-service";
+import { getAdminDashboardStats, getRecentVerificationActivity } from "@/services/admin-dashboard-service";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -37,19 +34,13 @@ const STATION_STATUS_STYLES: Record<"ACTIVE" | "INACTIVE" | "UNKNOWN", string> =
   UNKNOWN: "bg-slate-400",
 };
 
-const dateFormatter = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" });
-
-function truncate(value: string | null, max = 40): string {
-  if (value === null) return "(none)";
-  return value.length > max ? `${value.slice(0, max)}…` : value;
-}
-
 /**
  * The admin overview/reporting landing page (Part 11) — read-only,
  * computed fresh from the live database on every request. Deliberately
- * does not manage anything: creating/editing stations through a UI is
- * Part 12, and a dedicated verification-approval workflow is Part 13.
- * This page only reports what's true right now.
+ * does not manage anything itself: creating/editing stations through a UI
+ * is Part 12 (`/admin/stations`), and the verification-approval workflow
+ * is Part 13 (`/admin/verification`) — this page only reports and links
+ * out to both.
  */
 export default async function AdminPage() {
   // src/proxy.ts already redirects non-admins away from /admin/** as a UX
@@ -90,13 +81,22 @@ export default async function AdminPage() {
             </p>
           </div>
         </div>
-        <Link
-          href="/admin/stations"
-          className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-        >
-          <MapPin className="h-4 w-4" aria-hidden="true" />
-          Manage Stations
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/admin/verification"
+            className="inline-flex items-center gap-2 rounded-lg border border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
+          >
+            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+            Verification Queue
+          </Link>
+          <Link
+            href="/admin/stations"
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+          >
+            <MapPin className="h-4 w-4" aria-hidden="true" />
+            Manage Stations
+          </Link>
+        </div>
       </div>
 
       {/* Stat cards */}
@@ -200,61 +200,24 @@ export default async function AdminPage() {
 
       {/* Recent verification activity */}
       <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-          Recent verification activity
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Recent verification activity
+          </h2>
+          <Link
+            href="/admin/verification"
+            className="text-sm font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+          >
+            Open verification queue →
+          </Link>
+        </div>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           Every verification-field change made through <code>PUT /api/stations/[id]</code> is logged
-          here automatically — see docs/architecture.md §4/§5. A full verification workflow (approving
-          NEEDS_REVIEW stations, bulk actions) arrives in Part 13; this is a read-only feed.
+          here automatically — see docs/architecture.md §4/§5. This feed is platform-wide and capped
+          at the latest 15; the verification queue shows a station&apos;s full history.
         </p>
 
-        {recentActivity.length === 0 ? (
-          <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">
-            No verification changes have been logged yet.
-          </p>
-        ) : (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
-                  <th className="pb-2 pr-4 font-medium">Station</th>
-                  <th className="pb-2 pr-4 font-medium">Field</th>
-                  <th className="pb-2 pr-4 font-medium">Change</th>
-                  <th className="pb-2 pr-4 font-medium">Admin</th>
-                  <th className="pb-2 font-medium">When</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {recentActivity.map((entry) => (
-                  <tr key={entry.id}>
-                    <td className="max-w-[160px] truncate py-2 pr-4">
-                      <Link
-                        href={`/stations/${entry.station.id}`}
-                        className="font-medium text-emerald-600 hover:underline dark:text-emerald-400"
-                      >
-                        {entry.station.stationName}
-                      </Link>
-                    </td>
-                    <td className="py-2 pr-4 text-slate-700 dark:text-slate-300">
-                      {labelForField(entry.fieldChanged)}
-                    </td>
-                    <td className="py-2 pr-4 text-slate-600 dark:text-slate-400">
-                      <span className="line-through">{truncate(entry.oldValue)}</span>{" "}
-                      <span aria-hidden="true">→</span> {truncate(entry.newValue)}
-                    </td>
-                    <td className="py-2 pr-4 text-slate-600 dark:text-slate-400">
-                      {entry.admin?.name ?? "Unknown admin"}
-                    </td>
-                    <td className="whitespace-nowrap py-2 text-slate-500 dark:text-slate-400">
-                      {dateFormatter.format(entry.createdAt)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <VerificationLogTable rows={recentActivity} />
       </section>
     </Container>
   );
