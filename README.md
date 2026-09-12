@@ -4,7 +4,7 @@
 
 E Sakhi is a smart Electric Vehicle (EV) charging-station discovery and recommendation platform focused primarily on Nepal. It helps EV drivers find charging stations, understand which chargers actually fit their vehicle, estimate charging time, and get station recommendations that account for compatibility, distance, power, availability, rating, and how well-verified the station's data actually is.
 
-> **Status:** early development (through Part 10 — user dashboard & favorites). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle/favorites API, an interactive Nepal map, a full search/filter station list, station detail pages, a charging calculator, multi-factor station recommendations, and real per-user favorites (`/dashboard`, `/my-favorites`) are live; reviews and admin tooling are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
+> **Status:** early development (through Part 11 — admin dashboard). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle/favorites API, an interactive Nepal map, a full search/filter station list, station detail pages, a charging calculator, multi-factor station recommendations, real per-user favorites (`/dashboard`, `/my-favorites`), and a live admin overview (`/admin`) are live; reviews, admin station management, and the data verification workflow are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
 
 ---
 
@@ -75,7 +75,7 @@ npm run db:seed
 npm run dev
 ```
 
-`npm run dev` currently serves the home page, a working `/map`, `/stations` (search/filters), `/stations/[id]` (station details), `/charging-calculator`, `/recommendations`, `/dashboard`, and `/my-favorites`, plus `/login`, `/register`, `/profile`, and `/admin` (stub). Reviews and admin tooling aren't built yet.
+`npm run dev` currently serves the home page, a working `/map`, `/stations` (search/filters), `/stations/[id]` (station details), `/charging-calculator`, `/recommendations`, `/dashboard`, `/my-favorites`, plus `/login`, `/register`, `/profile`, and a real `/admin` overview dashboard. Reviews, admin station management, and the data verification workflow aren't built yet.
 
 ### Environment Variables
 
@@ -185,6 +185,15 @@ Real per-user favorites (Part 10) — the `Favorite` model has existed since Par
 - **Ownership is structural, not just checked** — every mutation derives `userId` from the authenticated session (`requireUserForApi()`) and never reads it from the request; a client literally cannot submit a `userId` for `POST`/`DELETE /api/favorites`, satisfying `docs/architecture.md §3`'s ownership rule by construction, not just by a runtime check that could be forgotten later.
 - Both `POST` (favorite) and `DELETE` (unfavorite) are idempotent — clicking twice, or a retried request, never errors.
 
+### Admin Dashboard
+
+`/admin` (`ADMIN`-only, real-server-checked via `requireAdmin()` regardless of what `src/proxy.ts` already redirected) replaces the old "coming soon" stub with a real overview, computed fresh from the database on every request — nothing cached, nothing hard-coded:
+
+- **Counts**: stations, chargers, operators, connectors, users (and how many are admins), favorites, reviews, and reports (the last two are genuinely `0` today — Reviews/Reports are Part 15 — and the dashboard says so plainly rather than omitting the row).
+- **Station status breakdown**, confirmed-coordinate count, and soft-deleted station/charger counts.
+- **Verification status distribution** — all six `VerificationStatus` values shown even at `0`, a status nobody currently has is real information, not a gap to hide.
+- **Recent verification activity** — the last 15 `VerificationLog` rows (every verification-field change `PUT /api/stations/[id]` makes has been logged automatically since Part 04; this is the first page that actually shows that log). Read-only: this page reports, it never mutates. Managing stations through a UI is Part 12; a full verification-approval workflow (bulk actions on `NEEDS_REVIEW` stations, etc.) is Part 13 — kept deliberately out of scope here.
+
 ## Development Roadmap
 
 Built incrementally, in the order below. Each part is tested, committed, and left in a runnable state before the next begins.
@@ -200,7 +209,7 @@ Built incrementally, in the order below. Each part is tested, committed, and lef
 - [x] **Part 08** — Charging calculator *(`/charging-calculator`, `src/services/charging-calculator.ts`, seeded reference vehicle catalog, real-station-charger lookup)*
 - [x] **Part 09** — Smart recommendation engine *(`/recommendations`, `src/services/recommendation-engine.ts`, hard eligibility + weighted scoring over compatibility/distance/power/rating/verification/availability — model locked in `docs/recommendation-engine.md`)*
 - [x] **Part 10** — User dashboard & favorites *(`/dashboard`, `/my-favorites`, real favorite/unfavorite from the station detail page and station cards, `GET/POST /api/favorites`, `DELETE /api/favorites/[stationId]`, ownership always derived from the session — never a client-submitted user id)*
-- [ ] Part 11 — Admin dashboard
+- [x] **Part 11** — Admin dashboard *(`/admin`, real-time station/charger/operator/user/favorite/review/report counts, verification-status distribution, recent `VerificationLog` activity — read-only reporting only; managing stations and the verification-approval workflow are Parts 12/13)*
 - [ ] Part 12 — Admin station management
 - [ ] Part 13 — Data verification dashboard
 - [ ] Part 14 — Excel import/update tool
