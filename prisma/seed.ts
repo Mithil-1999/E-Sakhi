@@ -21,8 +21,8 @@
  */
 
 import "dotenv/config";
+import fs from "node:fs";
 import path from "node:path";
-import ExcelJS from "exceljs";
 import { PrismaClient, type Prisma } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
@@ -31,6 +31,20 @@ import {
   splitConnectorTokens,
   resolveConnectorToken,
 } from "../src/services/connector-service";
+import {
+  type RawRow,
+  type StationConsistencyIssue,
+  readStationRows,
+  mapStationStatus,
+  resolveVerification,
+  buildVerificationSource,
+  pickContact,
+  groupByStation,
+  checkStationConsistency,
+  str,
+  strOrDefault,
+  num,
+} from "../src/services/excel-station-parser";
 import { seedVehicles } from "./seed-vehicles";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
@@ -41,153 +55,6 @@ const EXCEL_PATH =
   path.join(__dirname, "seed-data", "e-sakhi-data.xlsx");
 
 const STATIONS_SHEET = "EV_Stations";
-
-// -----------------------------------------------------------------------
-// Small typed helpers over ExcelJS's loosely-typed cell values
-// -----------------------------------------------------------------------
-
-type RawRow = Record<string, unknown>;
-
-function cellToPlainValue(value: ExcelJS.CellValue): unknown {
-  if (value && typeof value === "object" && "text" in value) {
-    // Rich text cell
-    return (value as { text: string }).text;
-  }
-  if (value && typeof value === "object" && "result" in value) {
-    // Formula cell — use the computed result
-    return (value as { result: unknown }).result;
-  }
-  return value;
-}
-
-function str(value: unknown): string | null {
-  if (value === null || value === undefined) return null;
-  const s = String(value).trim();
-  return s.length === 0 ? null : s;
-}
-
-function strOrDefault(value: unknown, fallback: string): string {
-  return str(value) ?? fallback;
-}
-
-function num(value: unknown): number | null {
-  if (value === null || value === undefined) return null;
-  const n = typeof value === "number" ? value : parseFloat(String(value).trim());
-  return Number.isFinite(n) ? n : null;
-}
-
-/** Excel "Not Available" / blank sentinels used throughout this dataset. */
-function isRealValue(value: string | null): value is string {
-  return value !== null && value.toLowerCase() !== "not available";
-}
-
-async function readStationRows(filePath: string): Promise<RawRow[]> {
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.readFile(filePath);
-
-  const sheet = workbook.getWorksheet(STATIONS_SHEET);
-  if (!sheet) {
-    throw new Error(
-      `Sheet "${STATIONS_SHEET}" not found in ${filePath}. Sheets present: ${workbook.worksheets
-        .map((w) => w.name)
-        .join(", ")}`
-    );
-  }
-
-  const headerRow = sheet.getRow(1);
-  const headers: string[] = [];
-  headerRow.eachCell({ includeEmpty: false }, (cell, colNumber) => {
-    headers[colNumber] = String(cellToPlainValue(cell.value) ?? "").trim();
-  });
-
-  const rows: RawRow[] = [];
-  sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-    if (rowNumber === 1) return; // header
-    const record: RawRow = {};
-    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-      const key = headers[colNumber];
-      if (key) record[key] = cellToPlainValue(cell.value);
-    });
-    rows.push(record);
-  });
-
-  return rows;
-}
-
-// -----------------------------------------------------------------------
-// Mapping rules derived from actually inspecting the dataset (see the
-// Part 02 addendum in docs/data-model.md for the full rationale).
-// -----------------------------------------------------------------------
-
-function mapStationStatus(rawStatus: string | null): "ACTIVE" | "INACTIVE" | "UNKNOWN" {
-  if (rawStatus === "Not Available") return "INACTIVE";
-  // "Listed" only confirms the compiler listed it, not that it is
-  // operationally active — that is a real-time-shaped fact we don't have.
-  return "UNKNOWN";
-}
-
-type VerificationOutcome = {
-  status: "VERIFIED" | "NEEDS_REVIEW" | "ASSUMED";
-  note: string;
-};
-
-/**
- * The source dataset marks `assumption_flag = 'YES'` on literally every
- * row and `verified = 'NO'` on all but one. That one `verified = 'YES'`
- * row is internally self-contradictory (source='NO', status='Not
- * Available', rating=0) — so rather than trust a self-contradictory
- * "verified" flag at face value, a row is only ever treated as VERIFIED
- * when it says verified=YES *and* shows none of those contradiction
- * signals. Everything else self-declared as an assumption imports as
- * ASSUMED, never as a stronger status than the source actually claims.
- */
-function resolveVerification(row: RawRow): VerificationOutcome {
-  const verified = str(row.verified);
-  const source = str(row.source);
-  const status = str(row.status);
-  const rating = row.rating;
-
-  const looksContradictory =
-    source === "NO" ||
-    status === "Not Available" ||
-    (typeof rating === "number" && rating === 0);
-
-  if (verified === "YES") {
-    if (looksContradictory) {
-      return {
-        status: "NEEDS_REVIEW",
-        note: "Source marked this record verified=YES, but other fields on the same row (source/status/rating) contradict that — flagged for admin review rather than trusted at face value.",
-      };
-    }
-    return { status: "VERIFIED", note: "Source-reported as verified." };
-  }
-
-  return {
-    status: "ASSUMED",
-    note: "Source dataset self-declared this record as an assumption (assumption_flag=YES), not independently verified.",
-  };
-}
-
-function buildVerificationSource(row: RawRow): string {
-  const source = str(row.source);
-  const lastVerifiedRaw = row.last_verified;
-  const compiledDate =
-    lastVerifiedRaw instanceof Date
-      ? lastVerifiedRaw.toISOString().slice(0, 10)
-      : str(lastVerifiedRaw);
-
-  if (source && source !== "NO") {
-    return compiledDate ? `${source} (source-compiled ${compiledDate})` : source;
-  }
-  return "Source metadata missing or invalid in the original dataset row; flagged for review.";
-}
-
-function pickContact(row: RawRow): string | null {
-  const best = str(row.contact_best);
-  if (best) return best;
-  const raw = str(row.contact);
-  return isRealValue(raw) ? raw : null;
-}
 
 // -----------------------------------------------------------------------
 // Seed
@@ -235,53 +102,15 @@ async function seedOperators(rows: RawRow[]) {
   return idByName;
 }
 
-type StationConsistencyIssue = {
-  stationId: string;
-  field: string;
-  values: string[];
-};
-
-/** Fields expected to be identical across every plug-row of one station. */
-const STATION_LEVEL_FIELDS = [
-  "station_name",
-  "operator",
-  "address",
-  "city",
-  "district",
-  "province",
-  "map_url",
-  "status",
-] as const;
-
-function groupByStation(rows: RawRow[]): Map<string, RawRow[]> {
-  const groups = new Map<string, RawRow[]>();
-  for (const row of rows) {
-    const sid = str(row.station_id);
-    if (!sid) continue;
-    const arr = groups.get(sid) ?? [];
-    arr.push(row);
-    groups.set(sid, arr);
-  }
-  return groups;
-}
-
-function checkStationConsistency(
-  stationId: string,
-  rows: RawRow[]
-): StationConsistencyIssue[] {
-  const issues: StationConsistencyIssue[] = [];
-  for (const field of STATION_LEVEL_FIELDS) {
-    const values = new Set(rows.map((r) => str(r[field]) ?? ""));
-    if (values.size > 1) {
-      issues.push({ stationId, field, values: Array.from(values) });
-    }
-  }
-  return issues;
-}
-
 async function main() {
   console.log(`Reading dataset from: ${EXCEL_PATH}`);
-  const rows = await readStationRows(EXCEL_PATH);
+  // readStationRows() (src/services/excel-station-parser.ts) is
+  // Buffer-based — shared with the admin import tool (Part 14), which
+  // only ever has an uploaded file's bytes, never a path on this
+  // machine's disk. This script reads its own fixed, committed file into
+  // a buffer first so both consumers hit the identical parsing code.
+  const fileBuffer = fs.readFileSync(EXCEL_PATH);
+  const rows = await readStationRows(fileBuffer);
   console.log(`Read ${rows.length} plug rows from "${STATIONS_SHEET}".`);
 
   console.log("Seeding canonical connectors + aliases...");

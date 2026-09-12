@@ -4,7 +4,7 @@
 
 E Sakhi is a smart Electric Vehicle (EV) charging-station discovery and recommendation platform focused primarily on Nepal. It helps EV drivers find charging stations, understand which chargers actually fit their vehicle, estimate charging time, and get station recommendations that account for compatibility, distance, power, availability, rating, and how well-verified the station's data actually is.
 
-> **Status:** early development (through Part 13 — data verification dashboard). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle/favorites API, an interactive Nepal map, a full search/filter station list, station detail pages, a charging calculator, multi-factor station recommendations, real per-user favorites (`/dashboard`, `/my-favorites`), a live admin overview (`/admin`), real admin station/charger management (`/admin/stations`), and a dedicated verification workflow (`/admin/verification`) are live; reviews and the Excel import/conflict tool are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
+> **Status:** early development (through Part 14 — Excel import/update tool). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle/favorites API, an interactive Nepal map, a full search/filter station list, station detail pages, a charging calculator, multi-factor station recommendations, real per-user favorites (`/dashboard`, `/my-favorites`), a live admin overview (`/admin`), real admin station/charger management (`/admin/stations`), a dedicated verification workflow (`/admin/verification`), and a diff/approve Excel re-import tool (`/admin/import`) are live; reviews are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
 
 ---
 
@@ -75,7 +75,7 @@ npm run db:seed
 npm run dev
 ```
 
-`npm run dev` currently serves the home page, a working `/map`, `/stations` (search/filters), `/stations/[id]` (station details), `/charging-calculator`, `/recommendations`, `/dashboard`, `/my-favorites`, plus `/login`, `/register`, `/profile`, a real `/admin` overview dashboard, admin station/charger management at `/admin/stations`, and a verification workflow at `/admin/verification`. Reviews and the Excel import/conflict tool aren't built yet.
+`npm run dev` currently serves the home page, a working `/map`, `/stations` (search/filters), `/stations/[id]` (station details), `/charging-calculator`, `/recommendations`, `/dashboard`, `/my-favorites`, plus `/login`, `/register`, `/profile`, a real `/admin` overview dashboard, admin station/charger management at `/admin/stations`, a verification workflow at `/admin/verification`, and an Excel re-import tool at `/admin/import`. Reviews aren't built yet.
 
 ### Environment Variables
 
@@ -96,7 +96,7 @@ AUTH_SECRET=    # Auth.js session-signing secret — generate with:
 
 The initial dataset (460 stations / 517 plugs, exactly matching the project brief) is imported from `prisma/seed-data/e-sakhi-data.xlsx` — a committed copy of the source spreadsheet, so `npm run db:seed` is reproducible without depending on a path outside the repo. The mapping from source columns to database fields, and every judgment call involved (verification-status resolution, the `CCS2;GB/T` combo-connector finding, why coordinates are `NULL` for every station, etc.), is documented in [docs/data-model.md §8](docs/data-model.md#8-part-02-addendum--what-the-real-dataset-actually-looks-like).
 
-`prisma/seed.ts` is idempotent (safe to re-run) and never overwrites a station's verification fields or a charger's availability on re-run — but it is a *bootstrap* script, not the admin-facing conflict-detection/approval tool described for Part 14. Verify a fresh import with `npm run db:verify`.
+`prisma/seed.ts` is idempotent (safe to re-run) and never overwrites a station's verification fields or a charger's availability on re-run — but it is a *bootstrap* script, not the admin-facing conflict-detection/approval tool. That tool is `/admin/import` (Part 14, see below) — its parsing/mapping logic is shared with this script (`src/services/excel-station-parser.ts`), not a second implementation. Verify a fresh import with `npm run db:verify`.
 
 ### Authentication
 
@@ -130,6 +130,8 @@ All station data is served from the database through these endpoints — nothing
 | `GET /api/favorites` | Signed-in | Lists the current session's favorited stations. |
 | `POST /api/favorites` | Signed-in | Body `{ stationId }`. Idempotent — favoriting an already-favorited station just succeeds. |
 | `DELETE /api/favorites/[stationId]` | Signed-in | Unfavorites a station. Idempotent — succeeds even if it wasn't favorited. `userId` always comes from the session, never from client input (`docs/architecture.md §3`). |
+| `POST /api/import/preview` | `ADMIN` | Multipart upload (`file`, an `.xlsx`). Read-only — parses and diffs against the live database, writes nothing. See [docs/data-import.md](docs/data-import.md). |
+| `POST /api/import/apply` | `ADMIN` | JSON body of admin-approved entries (as returned by the preview call). Writes only via the existing station/charger mutation functions — never a station's verification fields, coordinates, or a charger's availability. |
 
 ### Testing the API
 
@@ -216,6 +218,16 @@ Real per-user favorites (Part 10) — the `Favorite` model has existed since Par
 - **Editing reuses Part 12's form, not a second one** — "Review & edit verification" links straight to `/admin/stations/[id]/edit#verification`, that page's existing Verification section. No new mutation path was added; `updateStation()` (Part 04) and its automatic `VerificationLog` write are untouched.
 - **A station's full history**, not just the dashboard's platform-wide last-15 — the station edit page now has its own "Verification history" section showing everything on record for that one station. The table itself (`VerificationLogTable`) is shared with `/admin`'s recent-activity feed rather than a second implementation.
 
+### Excel Import & Update Tool
+
+`/admin/import` (Part 14) is what makes re-uploading an updated version of the source spreadsheet safe once real admin edits (Parts 12/13) exist in the database. Full model locked in [docs/data-import.md](docs/data-import.md); in brief:
+
+- **Upload, then preview, then apply** — two requests, no persisted "pending import" state. `POST /api/import/preview` parses the file and diffs it against the live database (writes nothing); the browser holds the computed diff and sends back only the admin-approved subset to `POST /api/import/apply`, which is what actually writes.
+- **The exact same parsing/mapping rules `prisma/seed.ts` uses** — extracted into `src/services/excel-station-parser.ts` so the bootstrap script and this tool share one implementation, not two. An uploaded file is diffed with identical column-mapping logic to what originally built the dataset.
+- **Structurally incapable of touching a station's verification fields, coordinates, or a charger's availability** — not a runtime check, a type-level one: nothing in the apply request's schema defines those fields, so even a hand-crafted request has them silently stripped (Zod's default behavior for unknown object keys). Applying writes only ever call the existing `createStation()`/`updateStation()`/`createCharger()`/`updateCharger()` (Parts 04/12) — no new mutation logic exists anywhere in this tool.
+- **A soft-deleted station reappearing in a new upload is skipped, never revived** — same for a charger whose plug id now belongs to a different station. Both are surfaced with a clear reason in the review UI, not silently dropped.
+- **A genuinely new station gets the same honest verification classification** `prisma/seed.ts` gives every row on first import (`VERIFIED`/`NEEDS_REVIEW`/`ASSUMED`, never a default "trusted" status) — there's no existing admin decision to protect for a record that didn't exist before.
+
 ## Development Roadmap
 
 Built incrementally, in the order below. Each part is tested, committed, and left in a runnable state before the next begins.
@@ -234,7 +246,7 @@ Built incrementally, in the order below. Each part is tested, committed, and lef
 - [x] **Part 11** — Admin dashboard *(`/admin`, real-time station/charger/operator/user/favorite/review/report counts, verification-status distribution, recent `VerificationLog` activity — read-only reporting only; managing stations and the verification-approval workflow are Parts 12/13)*
 - [x] **Part 12** — Admin station management *(`/admin/stations`, `/admin/stations/new`, `/admin/stations/[id]/edit` — create/edit/soft-delete stations and their chargers/connectors through a real UI, built on Part 04's station API plus new `POST /api/chargers` / `PUT`&`DELETE /api/chargers/[id]`; coordinates stay honest — never defaulted or fabricated by the form)*
 - [x] **Part 13** — Data verification dashboard *(`/admin/verification` — a queue of NEEDS_REVIEW/ASSUMED/UNVERIFIED stations with the full checklist rendered inline, linking to Part 12's existing edit form rather than a second one; a station's complete VerificationLog history, not just the dashboard's last-15 feed)*
-- [ ] Part 14 — Excel import/update tool
+- [x] **Part 14** — Excel import/update tool *(`/admin/import` — upload, diff against the live database, review, approve; reuses `createStation`/`updateStation`/`createCharger`/`updateCharger` for every write, adds none; structurally can never touch verification fields, coordinates, or charger availability on an existing record — see `docs/data-import.md`)*
 - [ ] Part 15 — Reviews + reports
 - [ ] Part 16 — Final testing, security review, polish
 

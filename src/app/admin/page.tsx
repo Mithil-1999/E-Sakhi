@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   Battery,
+  FileSpreadsheet,
   Flag,
   Heart,
   MapPin,
@@ -82,6 +83,13 @@ export default async function AdminPage() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link
+            href="/admin/import"
+            className="inline-flex items-center gap-2 rounded-lg border border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
+          >
+            <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
+            Import Data
+          </Link>
           <Link
             href="/admin/verification"
             className="inline-flex items-center gap-2 rounded-lg border border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
