@@ -63,7 +63,7 @@ export default async function AdminPage() {
   ]);
 
   const statCards = [
-    { label: "Stations", value: stats.stations.total, icon: MapPin, href: "/stations" },
+    { label: "Stations", value: stats.stations.total, icon: MapPin, href: "/admin/stations" },
     { label: "Chargers", value: stats.chargers.total, icon: Plug },
     { label: "Operators", value: stats.operators, icon: Zap },
     { label: "Connectors", value: stats.connectors, icon: Battery },
@@ -77,17 +77,26 @@ export default async function AdminPage() {
 
   return (
     <Container className="py-10">
-      <div className="mb-8 flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
-          <Shield className="h-5 w-5" aria-hidden="true" />
-        </span>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Admin Dashboard</h1>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Signed in as {admin.name ?? admin.email}. Every number below is computed live from the
-            database, not cached or hard-coded.
-          </p>
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+            <Shield className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Admin Dashboard</h1>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              Signed in as {admin.name ?? admin.email}. Every number below is computed live from the
+              database, not cached or hard-coded.
+            </p>
+          </div>
         </div>
+        <Link
+          href="/admin/stations"
+          className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+        >
+          <MapPin className="h-4 w-4" aria-hidden="true" />
+          Manage Stations
+        </Link>
       </div>
 
       {/* Stat cards */}

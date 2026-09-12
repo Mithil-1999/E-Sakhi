@@ -4,7 +4,7 @@
 
 E Sakhi is a smart Electric Vehicle (EV) charging-station discovery and recommendation platform focused primarily on Nepal. It helps EV drivers find charging stations, understand which chargers actually fit their vehicle, estimate charging time, and get station recommendations that account for compatibility, distance, power, availability, rating, and how well-verified the station's data actually is.
 
-> **Status:** early development (through Part 11 — admin dashboard). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle/favorites API, an interactive Nepal map, a full search/filter station list, station detail pages, a charging calculator, multi-factor station recommendations, real per-user favorites (`/dashboard`, `/my-favorites`), and a live admin overview (`/admin`) are live; reviews, admin station management, and the data verification workflow are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
+> **Status:** early development (through Part 12 — admin station management). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle/favorites API, an interactive Nepal map, a full search/filter station list, station detail pages, a charging calculator, multi-factor station recommendations, real per-user favorites (`/dashboard`, `/my-favorites`), a live admin overview (`/admin`), and real admin station/charger management (`/admin/stations`) are live; reviews and the data verification workflow are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
 
 ---
 
@@ -75,7 +75,7 @@ npm run db:seed
 npm run dev
 ```
 
-`npm run dev` currently serves the home page, a working `/map`, `/stations` (search/filters), `/stations/[id]` (station details), `/charging-calculator`, `/recommendations`, `/dashboard`, `/my-favorites`, plus `/login`, `/register`, `/profile`, and a real `/admin` overview dashboard. Reviews, admin station management, and the data verification workflow aren't built yet.
+`npm run dev` currently serves the home page, a working `/map`, `/stations` (search/filters), `/stations/[id]` (station details), `/charging-calculator`, `/recommendations`, `/dashboard`, `/my-favorites`, plus `/login`, `/register`, `/profile`, a real `/admin` overview dashboard, and real admin station/charger management at `/admin/stations`. Reviews and the data verification workflow aren't built yet.
 
 ### Environment Variables
 
@@ -120,7 +120,10 @@ All station data is served from the database through these endpoints — nothing
 | `POST /api/stations` | `ADMIN` | Creates a station. Coordinates are never invented — omit `latitude`/`longitude` rather than guessing. |
 | `PUT /api/stations/[id]` | `ADMIN` | Partial update (send only the fields you're changing). Any verification-field change is written to `VerificationLog` automatically, in the same transaction. |
 | `DELETE /api/stations/[id]` | `ADMIN` | Soft delete only (`is_deleted`/`deleted_at`/`deleted_by`) — also soft-deletes that station's chargers. Returns the updated (now-deleted) station rather than `204`. |
-| `GET /api/chargers` | Public | Read-only; filterable by `stationId`, `connector`, `chargingMode`. Charger/operator mutation endpoints arrive with admin station management (Part 12). |
+| `GET /api/chargers` | Public | Read-only; filterable by `stationId`, `connector`, `chargingMode`. |
+| `POST /api/chargers` | `ADMIN` | Creates a charger on an existing station. `connectorCodes` must each name a real `Connector` row (Part 12). |
+| `PUT /api/chargers/[id]` | `ADMIN` | Partial update. Providing `connectorCodes` re-syncs the charger's full connector set (deletes and recreates), not a merge. |
+| `DELETE /api/chargers/[id]` | `ADMIN` | Soft delete only, same rule as stations. |
 | `GET /api/operators` | Public | Read-only; includes each operator's active station count. |
 | `GET /api/vehicles` | Public | Read-only; optional `vehicleType` filter. Serves the seeded reference vehicle catalog (Part 08) that powers the charging calculator. |
 | `GET /api/recommendations` | Public | Read-only, `vehicleId` or manual `connector`/`maxAcPowerKw`/`maxDcPowerKw`, optional `latitude`/`longitude`, `limit` (max 50). Ranks real stations for a vehicle — see [docs/recommendation-engine.md](docs/recommendation-engine.md). |
@@ -194,6 +197,16 @@ Real per-user favorites (Part 10) — the `Favorite` model has existed since Par
 - **Verification status distribution** — all six `VerificationStatus` values shown even at `0`, a status nobody currently has is real information, not a gap to hide.
 - **Recent verification activity** — the last 15 `VerificationLog` rows (every verification-field change `PUT /api/stations/[id]` makes has been logged automatically since Part 04; this is the first page that actually shows that log). Read-only: this page reports, it never mutates. Managing stations through a UI is Part 12; a full verification-approval workflow (bulk actions on `NEEDS_REVIEW` stations, etc.) is Part 13 — kept deliberately out of scope here.
 
+### Admin Station Management
+
+`/admin/stations` (list, with the same search/filter panel and pagination `/stations` uses, plus an admin-only "show soft-deleted" toggle) → `/admin/stations/new` (create) and `/admin/stations/[id]/edit` (edit — station fields, the full verification checklist, chargers, and soft-delete) give real create/edit/delete UI to endpoints that mostly already existed:
+
+- **Stations** use the exact `POST`/`PUT`/`DELETE /api/stations[/id]` endpoints from Part 04 — no new station mutation logic, just a real form in front of it. Client-side validation reuses the identical Zod schemas (`src/lib/validation/station.ts`) those routes already validate with.
+- **Chargers had no mutation endpoints until this part** — `POST /api/chargers` and `PUT`/`DELETE /api/chargers/[id]` are new (`src/services/charger-service.ts`), soft-delete only, admin-only, and every `connectorCodes` value is checked against the real `Connector` table rather than trusted as free text.
+- **Coordinates stay honest**: the location form explicitly says never to estimate a latitude/longitude, a blank field saves as `NULL` (not `0,0`), and the same `z.coerce.number()` schema the public API already enforces (range-checked, no silent defaulting) runs client-side too.
+- **Verification-field edits still write to `VerificationLog`** exactly as they did before this part — nothing about that mechanism changed, this just gives it a UI. Confirmed live on `/admin`'s Recent Activity feed.
+- **Operator management is explicitly out of scope here** — the station form picks from existing operators (`GET /api/operators`, Part 04) or leaves a station independent; creating/editing operators isn't built (no admin need for it yet, given the 14 real operators already in the seeded dataset).
+
 ## Development Roadmap
 
 Built incrementally, in the order below. Each part is tested, committed, and left in a runnable state before the next begins.
@@ -210,7 +223,7 @@ Built incrementally, in the order below. Each part is tested, committed, and lef
 - [x] **Part 09** — Smart recommendation engine *(`/recommendations`, `src/services/recommendation-engine.ts`, hard eligibility + weighted scoring over compatibility/distance/power/rating/verification/availability — model locked in `docs/recommendation-engine.md`)*
 - [x] **Part 10** — User dashboard & favorites *(`/dashboard`, `/my-favorites`, real favorite/unfavorite from the station detail page and station cards, `GET/POST /api/favorites`, `DELETE /api/favorites/[stationId]`, ownership always derived from the session — never a client-submitted user id)*
 - [x] **Part 11** — Admin dashboard *(`/admin`, real-time station/charger/operator/user/favorite/review/report counts, verification-status distribution, recent `VerificationLog` activity — read-only reporting only; managing stations and the verification-approval workflow are Parts 12/13)*
-- [ ] Part 12 — Admin station management
+- [x] **Part 12** — Admin station management *(`/admin/stations`, `/admin/stations/new`, `/admin/stations/[id]/edit` — create/edit/soft-delete stations and their chargers/connectors through a real UI, built on Part 04's station API plus new `POST /api/chargers` / `PUT`&`DELETE /api/chargers/[id]`; coordinates stay honest — never defaulted or fabricated by the form)*
 - [ ] Part 13 — Data verification dashboard
 - [ ] Part 14 — Excel import/update tool
 - [ ] Part 15 — Reviews + reports
