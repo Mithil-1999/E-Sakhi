@@ -4,7 +4,7 @@
 
 E Sakhi is a smart Electric Vehicle (EV) charging-station discovery and recommendation platform focused primarily on Nepal. It helps EV drivers find charging stations, understand which chargers actually fit their vehicle, estimate charging time, and get station recommendations that account for compatibility, distance, power, availability, rating, and how well-verified the station's data actually is.
 
-> **Status:** early development (through Part 03 — authentication). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), and registration/login/logout/role-based access are live; most user-facing features (map, search, calculator, recommendations) are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
+> **Status:** early development (through Part 04 — station API). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, and a full station/charger/operator read API (plus admin-only station CRUD) are live; user-facing features that consume this API (map, search UI, calculator, recommendations) are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
 
 ---
 
@@ -109,6 +109,29 @@ npm run db:create-admin
 
 Safe to re-run: if that email already has an account, it's promoted to `ADMIN` without touching its password; otherwise a new `ADMIN` account is created. Route protection lives in `src/proxy.ts` — note that's Next.js 16's renamed `middleware.ts` convention (see `docs/architecture.md §3`), not a typo.
 
+### Station API
+
+All station data is served from the database through these endpoints — nothing is hard-coded in components. Full list responses use the `{ data, meta }` envelope, errors use `{ error: { message, code } }` (`docs/architecture.md §4`).
+
+| Endpoint | Auth | Notes |
+|---|---|---|
+| `GET /api/stations` | Public | Paginated (`page`, `pageSize`, max 100), filterable by `search`, `province`, `district`, `city`, `operatorId`, `status`, `verificationStatus`, `connector`, `chargingMode`. Excludes soft-deleted stations unless the caller is an authenticated `ADMIN` and passes `includeDeleted=true` (silently ignored otherwise). |
+| `GET /api/stations/[id]` | Public | `[id]` is the internal `Station.id`, not the source `station_id` (e.g. `EVNP-0001`). Includes full chargers/connectors and a `rating` computed live from `Review` rows (always `{ average: null, count: 0 }` until Part 15 adds reviews). |
+| `POST /api/stations` | `ADMIN` | Creates a station. Coordinates are never invented — omit `latitude`/`longitude` rather than guessing. |
+| `PUT /api/stations/[id]` | `ADMIN` | Partial update (send only the fields you're changing). Any verification-field change is written to `VerificationLog` automatically, in the same transaction. |
+| `DELETE /api/stations/[id]` | `ADMIN` | Soft delete only (`is_deleted`/`deleted_at`/`deleted_by`) — also soft-deletes that station's chargers. Returns the updated (now-deleted) station rather than `204`. |
+| `GET /api/chargers` | Public | Read-only; filterable by `stationId`, `connector`, `chargingMode`. Charger/operator mutation endpoints arrive with admin station management (Part 12). |
+| `GET /api/operators` | Public | Read-only; includes each operator's active station count. |
+
+### Testing the API
+
+```bash
+curl "http://localhost:3000/api/stations?search=Kathmandu&pageSize=5"
+curl "http://localhost:3000/api/stations/<id>"
+```
+
+Mutating endpoints need an authenticated `ADMIN` session cookie — easiest to test by logging in through the browser at `/login` and using the same browser tab's `fetch()` (devtools console), since Auth.js's Credentials sign-in needs a CSRF token round-trip that a plain `curl -d` won't do for you.
+
 ## Development Roadmap
 
 Built incrementally, in the order below. Each part is tested, committed, and left in a runnable state before the next begins.
@@ -117,7 +140,7 @@ Built incrementally, in the order below. Each part is tested, committed, and lef
 - [x] **Part 01** — Project foundation (Next.js app, layout, home page)
 - [x] **Part 02** — Database schema + Excel dataset import *(460 stations / 517 chargers seeded; see `docs/data-model.md §8`)*
 - [x] **Part 03** — Authentication *(Auth.js v5, Credentials + bcryptjs, `/login` `/register` `/profile`, role-based route protection)*
-- [ ] Part 04 — Station API
+- [x] **Part 04** — Station API *(GET/POST `/api/stations`, GET/PUT/DELETE `/api/stations/[id]`, GET `/api/chargers`, GET `/api/operators` — paginated, filterable, admin-only mutations, soft delete, verification audit log)*
 - [ ] Part 05 — Interactive map
 - [ ] Part 06 — Search + filters
 - [ ] Part 07 — Station details
