@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   Circle,
   Flag,
-  Heart,
   Info,
   MapPin,
   Navigation,
@@ -20,7 +19,10 @@ import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { VerificationBadge } from "@/components/ui/VerificationBadge";
 import { StationLocationMap } from "@/components/features/StationLocationMap";
+import { FavoriteButton } from "@/components/features/FavoriteButton";
 import { getStationById, type StationDetail } from "@/services/station-service";
+import { getOptionalUser } from "@/lib/auth/session";
+import { isFavorited } from "@/services/favorite-service";
 
 const STATUS_STYLES: Record<StationDetail["status"], string> = {
   ACTIVE: "text-emerald-700 dark:text-emerald-400",
@@ -93,6 +95,9 @@ export default async function StationDetailPage({ params }: PageProps<"/stations
   if (!station) {
     notFound();
   }
+
+  const user = await getOptionalUser();
+  const favorited = user ? await isFavorited(user.id, station.id) : false;
 
   const hasCoordinates = station.latitude !== null && station.longitude !== null;
   const navigateHref = hasCoordinates
@@ -334,15 +339,7 @@ export default async function StationDetailPage({ params }: PageProps<"/stations
                 </Button>
               )}
 
-              <Button
-                type="button"
-                variant="outline"
-                disabled
-                title="Favorites are coming in a later update"
-              >
-                <Heart className="h-4 w-4" aria-hidden="true" />
-                Favorite
-              </Button>
+              <FavoriteButton stationId={station.id} initialFavorited={favorited} isLoggedIn={user !== null} />
 
               <Button
                 type="button"

@@ -7,6 +7,8 @@ import { StationCard } from "@/components/features/StationCard";
 import { StationFilterPanel, type StationFilterValues } from "@/components/features/StationFilterPanel";
 import { StationListQuerySchema } from "@/lib/validation/station";
 import { listStations } from "@/services/station-service";
+import { getOptionalUser } from "@/lib/auth/session";
+import { listFavoriteStationIds } from "@/services/favorite-service";
 
 export const metadata: Metadata = {
   title: "Find Chargers",
@@ -56,6 +58,9 @@ export default async function StationsPage({ searchParams }: PageProps<"/station
   // who's viewing. See src/services/station-service.ts.
   const { data: stations, meta } = await listStations(query, false);
   const filterValues = toFilterValues(rawParams);
+
+  const user = await getOptionalUser();
+  const favoriteIds = user ? await listFavoriteStationIds(user.id) : null;
 
   function buildHref(targetPage: number) {
     const params = new URLSearchParams();
@@ -109,6 +114,10 @@ export default async function StationsPage({ searchParams }: PageProps<"/station
                   ...station,
                   createdAt: station.createdAt.toISOString(),
                   updatedAt: station.updatedAt.toISOString(),
+                }}
+                favorite={{
+                  isLoggedIn: user !== null,
+                  isFavorited: favoriteIds?.has(station.id) ?? false,
                 }}
               />
             ))}

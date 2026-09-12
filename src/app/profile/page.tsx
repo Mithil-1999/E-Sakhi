@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Shield, User as UserIcon } from "lucide-react";
 import { Container } from "@/components/ui/Container";
@@ -57,7 +58,10 @@ export default async function ProfilePage() {
         </dl>
 
         <p className="mt-6 text-sm text-slate-500 dark:text-slate-500">
-          Favorites, reviews, and profile editing arrive in a later part of the build.
+          <Link href="/my-favorites" className="font-medium text-emerald-600 hover:underline dark:text-emerald-400">
+            My Favorites
+          </Link>{" "}
+          is live — reviews and editing your profile arrive in a later part of the build.
         </p>
 
         <div className="mt-6 border-t border-slate-200 pt-6 dark:border-slate-800">

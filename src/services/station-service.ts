@@ -20,7 +20,11 @@ import type {
 // Shared Prisma include shapes
 // ---------------------------------------------------------------------------
 
-const stationListInclude = {
+// Exported so other services that ultimately render a Station as a
+// StationListItem (favorite-service.ts, Part 10) reuse this exact shape
+// and toStationListItem() below instead of redefining a second, possibly
+// drifting, "list card" projection of Station.
+export const stationListInclude = {
   operator: { select: { id: true, name: true, contact: true, website: true } },
   chargers: {
     where: { isDeleted: false },
@@ -43,7 +47,7 @@ const stationDetailInclude = {
   },
 } satisfies Prisma.StationInclude;
 
-type StationListRow = Prisma.StationGetPayload<{ include: typeof stationListInclude }>;
+export type StationListRow = Prisma.StationGetPayload<{ include: typeof stationListInclude }>;
 type StationDetailRow = Prisma.StationGetPayload<{ include: typeof stationDetailInclude }>;
 
 export type StationRating = { average: number | null; count: number };

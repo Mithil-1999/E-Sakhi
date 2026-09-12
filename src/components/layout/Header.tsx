@@ -100,6 +100,18 @@ function AuthLinks({ user, stacked = false }: { user: SessionUser | null; stacke
           </Link>
         )}
         <Link
+          href="/dashboard"
+          className="text-sm font-medium text-slate-700 hover:text-emerald-600 dark:text-slate-200 dark:hover:text-emerald-400"
+        >
+          Dashboard
+        </Link>
+        <Link
+          href="/my-favorites"
+          className="text-sm font-medium text-slate-700 hover:text-emerald-600 dark:text-slate-200 dark:hover:text-emerald-400"
+        >
+          Favorites
+        </Link>
+        <Link
           href="/profile"
           className="text-sm font-medium text-slate-700 hover:text-emerald-600 dark:text-slate-200 dark:hover:text-emerald-400"
         >

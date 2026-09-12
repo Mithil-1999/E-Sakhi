@@ -4,7 +4,7 @@
 
 E Sakhi is a smart Electric Vehicle (EV) charging-station discovery and recommendation platform focused primarily on Nepal. It helps EV drivers find charging stations, understand which chargers actually fit their vehicle, estimate charging time, and get station recommendations that account for compatibility, distance, power, availability, rating, and how well-verified the station's data actually is.
 
-> **Status:** early development (through Part 09 — smart recommendation engine). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle API, an interactive Nepal map, a full search/filter station list, station detail pages, a charging calculator, and multi-factor station recommendations are live; favorites, reviews, and admin tooling are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
+> **Status:** early development (through Part 10 — user dashboard & favorites). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle/favorites API, an interactive Nepal map, a full search/filter station list, station detail pages, a charging calculator, multi-factor station recommendations, and real per-user favorites (`/dashboard`, `/my-favorites`) are live; reviews and admin tooling are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
 
 ---
 
@@ -75,7 +75,7 @@ npm run db:seed
 npm run dev
 ```
 
-`npm run dev` currently serves the home page, a working `/map`, `/stations` (search/filters), `/stations/[id]` (station details), `/charging-calculator`, and `/recommendations`, plus `/login`, `/register`, `/profile`, and `/admin` (stub). User/admin dashboards and reviews/favorites aren't built yet.
+`npm run dev` currently serves the home page, a working `/map`, `/stations` (search/filters), `/stations/[id]` (station details), `/charging-calculator`, `/recommendations`, `/dashboard`, and `/my-favorites`, plus `/login`, `/register`, `/profile`, and `/admin` (stub). Reviews and admin tooling aren't built yet.
 
 ### Environment Variables
 
@@ -124,6 +124,9 @@ All station data is served from the database through these endpoints — nothing
 | `GET /api/operators` | Public | Read-only; includes each operator's active station count. |
 | `GET /api/vehicles` | Public | Read-only; optional `vehicleType` filter. Serves the seeded reference vehicle catalog (Part 08) that powers the charging calculator. |
 | `GET /api/recommendations` | Public | Read-only, `vehicleId` or manual `connector`/`maxAcPowerKw`/`maxDcPowerKw`, optional `latitude`/`longitude`, `limit` (max 50). Ranks real stations for a vehicle — see [docs/recommendation-engine.md](docs/recommendation-engine.md). |
+| `GET /api/favorites` | Signed-in | Lists the current session's favorited stations. |
+| `POST /api/favorites` | Signed-in | Body `{ stationId }`. Idempotent — favoriting an already-favorited station just succeeds. |
+| `DELETE /api/favorites/[stationId]` | Signed-in | Unfavorites a station. Idempotent — succeeds even if it wasn't favorited. `userId` always comes from the session, never from client input (`docs/architecture.md §3`). |
 
 ### Testing the API
 
@@ -173,6 +176,15 @@ Try it: [`/stations?province=Bagmati`](http://localhost:3000/stations?province=B
 
 `GET /api/recommendations` (public, `vehicleId` *or* manual `connector`/`maxAcPowerKw`/`maxDcPowerKw`, optional `latitude`/`longitude`) returns each result's full per-factor breakdown, not just a bare score.
 
+### Dashboard & Favorites
+
+Real per-user favorites (Part 10) — the `Favorite` model has existed since Part 02; this is the part that gives it a UI. Toggle a favorite from a station's detail page (replacing the disabled stub Part 07 left there) or directly from a station card on `/stations`, `/dashboard`, or `/my-favorites` — a small heart icon that requires no page reload (`src/components/features/FavoriteButton.tsx`). Signed out, the same control is a real link to `/login?callbackUrl=...`, not a fake-working button.
+
+- **`/dashboard`** — a light, signed-in landing hub: a favorites preview (first 3) plus quick links to the rest of the app. It doesn't duplicate `/profile`'s account fields or `/my-favorites`' full grid; it links to both.
+- **`/my-favorites`** — the full list, reusing `StationCard` rather than a second rendering of the same data. Unfavoriting a card removes it from the list immediately (local client state seeded from the server-fetched list, not a full page refresh).
+- **Ownership is structural, not just checked** — every mutation derives `userId` from the authenticated session (`requireUserForApi()`) and never reads it from the request; a client literally cannot submit a `userId` for `POST`/`DELETE /api/favorites`, satisfying `docs/architecture.md §3`'s ownership rule by construction, not just by a runtime check that could be forgotten later.
+- Both `POST` (favorite) and `DELETE` (unfavorite) are idempotent — clicking twice, or a retried request, never errors.
+
 ## Development Roadmap
 
 Built incrementally, in the order below. Each part is tested, committed, and left in a runnable state before the next begins.
@@ -187,7 +199,7 @@ Built incrementally, in the order below. Each part is tested, committed, and lef
 - [x] **Part 07** — Station details *(`/stations/[id]`, embedded single-station map, full verification detail, honest Navigate/Call/Favorite/Report actions)*
 - [x] **Part 08** — Charging calculator *(`/charging-calculator`, `src/services/charging-calculator.ts`, seeded reference vehicle catalog, real-station-charger lookup)*
 - [x] **Part 09** — Smart recommendation engine *(`/recommendations`, `src/services/recommendation-engine.ts`, hard eligibility + weighted scoring over compatibility/distance/power/rating/verification/availability — model locked in `docs/recommendation-engine.md`)*
-- [ ] Part 10 — User dashboard, favorites
+- [x] **Part 10** — User dashboard & favorites *(`/dashboard`, `/my-favorites`, real favorite/unfavorite from the station detail page and station cards, `GET/POST /api/favorites`, `DELETE /api/favorites/[stationId]`, ownership always derived from the session — never a client-submitted user id)*
 - [ ] Part 11 — Admin dashboard
 - [ ] Part 12 — Admin station management
 - [ ] Part 13 — Data verification dashboard

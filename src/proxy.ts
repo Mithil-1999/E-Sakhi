@@ -15,7 +15,7 @@ import { auth } from "@/lib/auth/auth";
  * docs/architecture.md §3/§10.
  */
 
-const PROTECTED_PREFIXES = ["/profile", "/admin"];
+const PROTECTED_PREFIXES = ["/profile", "/admin", "/dashboard", "/my-favorites"];
 const AUTH_PAGES = new Set(["/login", "/register"]);
 
 function matchesPrefix(pathname: string, prefixes: string[]): boolean {
