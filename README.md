@@ -4,7 +4,7 @@
 
 E Sakhi is a smart Electric Vehicle (EV) charging-station discovery and recommendation platform focused primarily on Nepal. It helps EV drivers find charging stations, understand which chargers actually fit their vehicle, estimate charging time, and get station recommendations that account for compatibility, distance, power, availability, rating, and how well-verified the station's data actually is.
 
-> **Status:** early development (through Part 06 — search + filters). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator API, an interactive Nepal map, and a full search/filter station list are live; station detail pages, the charging calculator, and recommendations are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
+> **Status:** early development (through Part 08 — charging calculator). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle API, an interactive Nepal map, a full search/filter station list, station detail pages, and a charging calculator are live; recommendations, favorites, and admin tooling are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
 
 ---
 
@@ -75,7 +75,7 @@ npm run db:seed
 npm run dev
 ```
 
-Most feature pages (map, search, calculator, recommendations) aren't built yet, so `npm run dev` currently serves the home page, placeholder `/map` and `/stations` pages, and working `/login`, `/register`, `/profile`, and `/admin` (stub) pages.
+`npm run dev` currently serves the home page, a working `/map`, `/stations` (search/filters), `/stations/[id]` (station details), and `/charging-calculator`, plus `/login`, `/register`, `/profile`, and `/admin` (stub). The recommendation engine and user/admin dashboards aren't built yet.
 
 ### Environment Variables
 
@@ -122,6 +122,7 @@ All station data is served from the database through these endpoints — nothing
 | `DELETE /api/stations/[id]` | `ADMIN` | Soft delete only (`is_deleted`/`deleted_at`/`deleted_by`) — also soft-deletes that station's chargers. Returns the updated (now-deleted) station rather than `204`. |
 | `GET /api/chargers` | Public | Read-only; filterable by `stationId`, `connector`, `chargingMode`. Charger/operator mutation endpoints arrive with admin station management (Part 12). |
 | `GET /api/operators` | Public | Read-only; includes each operator's active station count. |
+| `GET /api/vehicles` | Public | Read-only; optional `vehicleType` filter. Serves the seeded reference vehicle catalog (Part 08) that powers the charging calculator. |
 
 ### Testing the API
 
@@ -134,7 +135,7 @@ Mutating endpoints need an authenticated `ADMIN` session cookie — easiest to t
 
 ### Interactive Map
 
-`/map` renders every non-deleted station matched by the current filters, using `GET /api/stations` — nothing hard-coded. Only stations with confirmed `latitude`/`longitude` get a marker; as of this dataset that's **0 of 460** (see [docs/data-model.md §8](docs/data-model.md#8-part-02-addendum--what-the-real-dataset-actually-looks-like) for why), and the map says so plainly rather than hiding the gap. Markers cluster via `react-leaflet-cluster`; a popup shows name, operator, city, connector(s), power, status, and the verification badge, with a "View Details" link to `/stations/[id]` (that page itself is Part 07 — the link is ready, the destination isn't yet). "Use my location" falls back to a clear message and a manual "Nepal view" recenter button if geolocation is denied or unsupported.
+`/map` renders every non-deleted station matched by the current filters, using `GET /api/stations` — nothing hard-coded. Only stations with confirmed `latitude`/`longitude` get a marker; as of this dataset that's **0 of 460** (see [docs/data-model.md §8](docs/data-model.md#8-part-02-addendum--what-the-real-dataset-actually-looks-like) for why), and the map says so plainly rather than hiding the gap. Markers cluster via `react-leaflet-cluster`; a popup shows name, operator, city, connector(s), power, status, and the verification badge, with a "View Details" link to `/stations/[id]` (the real station detail page — Part 07). "Use my location" falls back to a clear message and a manual "Nepal view" recenter button if geolocation is denied or unsupported.
 
 All Leaflet-specific code is isolated in `src/components/map/MapProvider.tsx` (see `docs/architecture.md §6`) — swapping tile/map providers later means editing one file, not hunting through feature code.
 
@@ -147,6 +148,20 @@ All Leaflet-specific code is isolated in `src/components/map/MapProvider.tsx` (s
 
 Try it: [`/stations?province=Bagmati`](http://localhost:3000/stations?province=Bagmati) (171 matches), [`/stations?powerBucket=60_TO_120`](http://localhost:3000/stations?powerBucket=60_TO_120) (35 matches — a real, populated range, unlike vehicle/availability).
 
+### Station Details
+
+`/stations/[id]` (linked from every station card, map popup, and search result) shows a station's full record: address/province/district/city, an embedded single-station map (only rendered when real coordinates exist — "Location unavailable" otherwise, never a guessed pin), every charger with connector(s)/mode/power/availability, contact, status, live-computed rating, and the full verification picture (status, source, last-verified date, per-field verified checklist). Navigate/Call only appear when real coordinates/contact exist; Favorite and Report Incorrect Information are honestly inert stubs (disabled with an explanatory tooltip) until Parts 10/15 build them for real.
+
+### Charging Calculator
+
+`/charging-calculator` estimates the energy and time needed to charge a vehicle at a given charger. All math lives in `src/services/charging-calculator.ts` (pure functions, no database access) — the page only collects input and renders the result:
+
+- **Vehicle** — pick from a small seeded reference catalog of real EVs sold in Nepal (`prisma/seed-vehicles.ts`; currently cars only — see that file for why scooters/motorcycles aren't guessed at), or enter any vehicle's own battery capacity/AC/DC power manually.
+- **Charger** — search real stations (reuses `GET /api/stations` and `GET /api/stations/[id]`, same endpoints as `/map`/`/stations`) and pick one of its real chargers, or enter a charging mode/power manually.
+- **Estimate** — energy required is always computable from battery capacity alone; a time estimate is only shown when both the vehicle's max power for that charging mode *and* the charger's power rating are on record — otherwise the gap is stated plainly instead of guessing. Every estimate carries a caveat: it assumes constant charging power, while real charging (especially DC fast charging) typically tapers above ~80%.
+
+`GET /api/vehicles` (public, optional `vehicleType` filter) serves the same catalog the calculator uses.
+
 ## Development Roadmap
 
 Built incrementally, in the order below. Each part is tested, committed, and left in a runnable state before the next begins.
@@ -158,9 +173,8 @@ Built incrementally, in the order below. Each part is tested, committed, and lef
 - [x] **Part 04** — Station API *(GET/POST `/api/stations`, GET/PUT/DELETE `/api/stations/[id]`, GET `/api/chargers`, GET `/api/operators` — paginated, filterable, admin-only mutations, soft delete, verification audit log)*
 - [x] **Part 05** — Interactive map *(Leaflet/react-leaflet behind a single provider wrapper, clustering, filters, geolocation with manual fallback, honest "0 confirmed locations" messaging)*
 - [x] **Part 06** — Search + filters *(server-rendered, URL-driven `/stations` search; power-range/vehicle-type/availability filters added to the Part 04 API; station cards; pagination)*
-- [ ] Part 06 — Search + filters
-- [ ] Part 07 — Station details
-- [ ] Part 08 — Charging calculator
+- [x] **Part 07** — Station details *(`/stations/[id]`, embedded single-station map, full verification detail, honest Navigate/Call/Favorite/Report actions)*
+- [x] **Part 08** — Charging calculator *(`/charging-calculator`, `src/services/charging-calculator.ts`, seeded reference vehicle catalog, real-station-charger lookup)*
 - [ ] Part 09 — Smart recommendation engine
 - [ ] Part 10 — User dashboard, favorites
 - [ ] Part 11 — Admin dashboard

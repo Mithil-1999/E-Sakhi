@@ -12,6 +12,7 @@ const navLinks = [
   { href: "/", label: "Home" },
   { href: "/map", label: "Map" },
   { href: "/stations", label: "Find Chargers" },
+  { href: "/charging-calculator", label: "Calculator" },
 ];
 
 export function Header({ user }: { user: SessionUser | null }) {

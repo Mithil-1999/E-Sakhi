@@ -31,6 +31,7 @@ import {
   splitConnectorTokens,
   resolveConnectorToken,
 } from "../src/services/connector-service";
+import { seedVehicles } from "./seed-vehicles";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -285,6 +286,13 @@ async function main() {
 
   console.log("Seeding canonical connectors + aliases...");
   const connectorIdByCode = await seedConnectors();
+
+  // Reference vehicle catalog (Part 08) — unlike everything else in this
+  // file, not sourced from the Excel workbook; see prisma/seed-vehicles.ts
+  // for what it is and why it's deliberately small.
+  console.log("Seeding reference vehicle catalog...");
+  const vehicleCount = await seedVehicles(prisma);
+  console.log(`  ${vehicleCount} vehicles.`);
 
   console.log("Seeding operators...");
   const operatorIdByName = await seedOperators(rows);
