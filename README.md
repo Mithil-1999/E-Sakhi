@@ -4,7 +4,7 @@
 
 E Sakhi is a smart Electric Vehicle (EV) charging-station discovery and recommendation platform focused primarily on Nepal. It helps EV drivers find charging stations, understand which chargers actually fit their vehicle, estimate charging time, and get station recommendations that account for compatibility, distance, power, availability, rating, and how well-verified the station's data actually is.
 
-> **Status:** early development (through Part 05 — interactive map). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator API, and an interactive Nepal map (clustering, filters, geolocation) are live; search/list UI, station detail pages, the charging calculator, and recommendations are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
+> **Status:** early development (through Part 06 — search + filters). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator API, an interactive Nepal map, and a full search/filter station list are live; station detail pages, the charging calculator, and recommendations are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
 
 ---
 
@@ -115,7 +115,7 @@ All station data is served from the database through these endpoints — nothing
 
 | Endpoint | Auth | Notes |
 |---|---|---|
-| `GET /api/stations` | Public | Paginated (`page`, `pageSize`, max 100), filterable by `search`, `province`, `district`, `city`, `operatorId`, `status`, `verificationStatus`, `connector`, `chargingMode`. Excludes soft-deleted stations unless the caller is an authenticated `ADMIN` and passes `includeDeleted=true` (silently ignored otherwise). |
+| `GET /api/stations` | Public | Paginated (`page`, `pageSize`, max 100), filterable by `search`, `province`, `district`, `city`, `operatorId`, `status`, `verificationStatus`, `connector`, `chargingMode`, `powerBucket`, `vehicleType`, `availability` (the last three added in Part 06). Excludes soft-deleted stations unless the caller is an authenticated `ADMIN` and passes `includeDeleted=true` (silently ignored otherwise). |
 | `GET /api/stations/[id]` | Public | `[id]` is the internal `Station.id`, not the source `station_id` (e.g. `EVNP-0001`). Includes full chargers/connectors and a `rating` computed live from `Review` rows (always `{ average: null, count: 0 }` until Part 15 adds reviews). |
 | `POST /api/stations` | `ADMIN` | Creates a station. Coordinates are never invented — omit `latitude`/`longitude` rather than guessing. |
 | `PUT /api/stations/[id]` | `ADMIN` | Partial update (send only the fields you're changing). Any verification-field change is written to `VerificationLog` automatically, in the same transaction. |
@@ -138,6 +138,15 @@ Mutating endpoints need an authenticated `ADMIN` session cookie — easiest to t
 
 All Leaflet-specific code is isolated in `src/components/map/MapProvider.tsx` (see `docs/architecture.md §6`) — swapping tile/map providers later means editing one file, not hunting through feature code.
 
+### Search + Filters
+
+`/stations` is a fully server-rendered, URL-driven search page — every filter change navigates to a new `?...` URL (debounced for free-text search), so results, filters, and pagination are all shareable/bookmarkable links, not client-side-only state. It's built on the same `listStations()` service Part 04's API uses (see `docs/architecture.md §4` for why it calls the service directly rather than fetching its own API route), extended with three filters Part 04 deliberately deferred:
+
+- **Power range** — the five fixed buckets from the project brief (`src/lib/config/power-buckets.ts`), plus "Unknown" for a charger with no recorded power rather than a silent default.
+- **Vehicle type** and **Availability** — real filters against real schema fields, honest about current data: no charger in the seeded dataset has a vehicle type or a non-"Unknown" availability yet (no real-time source is connected), so selecting either correctly returns zero results today rather than something fabricated.
+
+Try it: [`/stations?province=Bagmati`](http://localhost:3000/stations?province=Bagmati) (171 matches), [`/stations?powerBucket=60_TO_120`](http://localhost:3000/stations?powerBucket=60_TO_120) (35 matches — a real, populated range, unlike vehicle/availability).
+
 ## Development Roadmap
 
 Built incrementally, in the order below. Each part is tested, committed, and left in a runnable state before the next begins.
@@ -148,6 +157,7 @@ Built incrementally, in the order below. Each part is tested, committed, and lef
 - [x] **Part 03** — Authentication *(Auth.js v5, Credentials + bcryptjs, `/login` `/register` `/profile`, role-based route protection)*
 - [x] **Part 04** — Station API *(GET/POST `/api/stations`, GET/PUT/DELETE `/api/stations/[id]`, GET `/api/chargers`, GET `/api/operators` — paginated, filterable, admin-only mutations, soft delete, verification audit log)*
 - [x] **Part 05** — Interactive map *(Leaflet/react-leaflet behind a single provider wrapper, clustering, filters, geolocation with manual fallback, honest "0 confirmed locations" messaging)*
+- [x] **Part 06** — Search + filters *(server-rendered, URL-driven `/stations` search; power-range/vehicle-type/availability filters added to the Part 04 API; station cards; pagination)*
 - [ ] Part 06 — Search + filters
 - [ ] Part 07 — Station details
 - [ ] Part 08 — Charging calculator

@@ -1,5 +1,6 @@
 import * as z from "zod";
 import { PaginationQuerySchema } from "@/lib/validation/pagination";
+import { POWER_BUCKET_IDS } from "@/lib/config/power-buckets";
 
 // Mirrors prisma/schema.prisma's enums. Kept as explicit literal tuples
 // (rather than deriving from the Prisma-generated enum object) so this
@@ -15,6 +16,8 @@ const VERIFICATION_STATUS_VALUES = [
   "ASSUMED",
 ] as const;
 const CHARGING_MODE_VALUES = ["AC", "DC", "UNKNOWN"] as const;
+const VEHICLE_TYPE_VALUES = ["CAR", "SCOOTER", "MOTORCYCLE", "OTHER"] as const;
+const CHARGER_AVAILABILITY_VALUES = ["AVAILABLE", "BUSY", "UNAVAILABLE", "UNKNOWN"] as const;
 
 export const StationListQuerySchema = PaginationQuerySchema.extend({
   search: z.string().trim().min(1).max(200).optional(),
@@ -26,6 +29,14 @@ export const StationListQuerySchema = PaginationQuerySchema.extend({
   verificationStatus: z.enum(VERIFICATION_STATUS_VALUES).optional(),
   connector: z.string().trim().min(1).max(50).optional(),
   chargingMode: z.enum(CHARGING_MODE_VALUES).optional(),
+  // Added in Part 06 — deliberately deferred by Part 04's own comments,
+  // which only wired the connector/chargingMode filters it needed for
+  // the map. All three narrow to stations with at least one charger
+  // matching the condition (same "some charger" semantics as connector/
+  // chargingMode above — see buildStationWhere in station-service.ts).
+  powerBucket: z.enum(POWER_BUCKET_IDS).optional(),
+  vehicleType: z.enum(VEHICLE_TYPE_VALUES).optional(),
+  availability: z.enum(CHARGER_AVAILABILITY_VALUES).optional(),
   // Admin-only in effect: a non-admin caller passing this is simply
   // ignored by the route handler rather than rejected — see
   // src/app/api/stations/route.ts.

@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { decimalToNumber } from "@/lib/db/serialize";
 import { buildPaginationMeta } from "@/lib/validation/pagination";
+import { findPowerBucket } from "@/lib/config/power-buckets";
 import type {
   StationListQuery,
   StationCreateInput,
@@ -192,11 +193,28 @@ function buildStationWhere(
     ];
   }
 
-  if (query.chargingMode || query.connector) {
+  if (query.chargingMode || query.connector || query.powerBucket || query.vehicleType || query.availability) {
+    const bucket = query.powerBucket ? findPowerBucket(query.powerBucket) : undefined;
+    // "Unknown" bucket = no recorded power_kw at all, an honest bucket
+    // rather than a fallback default — see src/lib/config/power-buckets.ts.
+    const powerCondition: Prisma.ChargerWhereInput | undefined = !bucket
+      ? undefined
+      : bucket.id === "UNKNOWN"
+        ? { powerKw: null }
+        : {
+            powerKw: {
+              ...(bucket.min !== null ? { gt: bucket.min } : {}),
+              ...(bucket.max !== null ? { lte: bucket.max } : {}),
+            },
+          };
+
     where.chargers = {
       some: {
         isDeleted: false,
         ...(query.chargingMode ? { chargingMode: query.chargingMode } : {}),
+        ...(query.vehicleType ? { vehicleType: query.vehicleType } : {}),
+        ...(query.availability ? { availability: query.availability } : {}),
+        ...(powerCondition ?? {}),
         ...(query.connector
           ? {
               connectors: {
