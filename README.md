@@ -4,7 +4,7 @@
 
 E Sakhi is a smart Electric Vehicle (EV) charging-station discovery and recommendation platform focused primarily on Nepal. It helps EV drivers find charging stations, understand which chargers actually fit their vehicle, estimate charging time, and get station recommendations that account for compatibility, distance, power, availability, rating, and how well-verified the station's data actually is.
 
-> **Status:** early development (through Part 04 — station API). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, and a full station/charger/operator read API (plus admin-only station CRUD) are live; user-facing features that consume this API (map, search UI, calculator, recommendations) are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
+> **Status:** early development (through Part 05 — interactive map). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator API, and an interactive Nepal map (clustering, filters, geolocation) are live; search/list UI, station detail pages, the charging calculator, and recommendations are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
 
 ---
 
@@ -88,7 +88,7 @@ AUTH_SECRET=    # Auth.js session-signing secret — generate with:
                 # node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-`NEXT_PUBLIC_MAP_TILE_URL` is read by a later part (05) and can stay blank for now. No real secrets are ever committed — `.env` / `.env.local` are git-ignored; `.env.example` documents variable names only.
+`NEXT_PUBLIC_MAP_TILE_URL` powers the `/map` page (Part 05) — it defaults to the public `tile.openstreetmap.org` endpoint if left blank, so it's optional for local dev too, but set it explicitly before deploying anywhere with real traffic (OpenStreetMap's public tile server has a usage policy that doesn't cover production apps). No real secrets are ever committed — `.env` / `.env.local` are git-ignored; `.env.example` documents variable names only.
 
 **Note on Prisma 7:** the database connection is configured in `prisma.config.ts` (which reads `DATABASE_URL`) rather than in `prisma/schema.prisma` — Prisma 7 moved connection config out of the schema file. The Prisma Client is constructed with an explicit `@prisma/adapter-pg` driver adapter (see `src/lib/db/prisma.ts`), not an implicit URL.
 
@@ -132,6 +132,12 @@ curl "http://localhost:3000/api/stations/<id>"
 
 Mutating endpoints need an authenticated `ADMIN` session cookie — easiest to test by logging in through the browser at `/login` and using the same browser tab's `fetch()` (devtools console), since Auth.js's Credentials sign-in needs a CSRF token round-trip that a plain `curl -d` won't do for you.
 
+### Interactive Map
+
+`/map` renders every non-deleted station matched by the current filters, using `GET /api/stations` — nothing hard-coded. Only stations with confirmed `latitude`/`longitude` get a marker; as of this dataset that's **0 of 460** (see [docs/data-model.md §8](docs/data-model.md#8-part-02-addendum--what-the-real-dataset-actually-looks-like) for why), and the map says so plainly rather than hiding the gap. Markers cluster via `react-leaflet-cluster`; a popup shows name, operator, city, connector(s), power, status, and the verification badge, with a "View Details" link to `/stations/[id]` (that page itself is Part 07 — the link is ready, the destination isn't yet). "Use my location" falls back to a clear message and a manual "Nepal view" recenter button if geolocation is denied or unsupported.
+
+All Leaflet-specific code is isolated in `src/components/map/MapProvider.tsx` (see `docs/architecture.md §6`) — swapping tile/map providers later means editing one file, not hunting through feature code.
+
 ## Development Roadmap
 
 Built incrementally, in the order below. Each part is tested, committed, and left in a runnable state before the next begins.
@@ -141,7 +147,7 @@ Built incrementally, in the order below. Each part is tested, committed, and lef
 - [x] **Part 02** — Database schema + Excel dataset import *(460 stations / 517 chargers seeded; see `docs/data-model.md §8`)*
 - [x] **Part 03** — Authentication *(Auth.js v5, Credentials + bcryptjs, `/login` `/register` `/profile`, role-based route protection)*
 - [x] **Part 04** — Station API *(GET/POST `/api/stations`, GET/PUT/DELETE `/api/stations/[id]`, GET `/api/chargers`, GET `/api/operators` — paginated, filterable, admin-only mutations, soft delete, verification audit log)*
-- [ ] Part 05 — Interactive map
+- [x] **Part 05** — Interactive map *(Leaflet/react-leaflet behind a single provider wrapper, clustering, filters, geolocation with manual fallback, honest "0 confirmed locations" messaging)*
 - [ ] Part 06 — Search + filters
 - [ ] Part 07 — Station details
 - [ ] Part 08 — Charging calculator
