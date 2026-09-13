@@ -1,0 +1,2302 @@
+{
+  "EVNP-0001": {
+    "latitude": 27.976204,
+    "longitude": 84.581495,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0002": {
+    "latitude": 27.872427,
+    "longitude": 84.622807,
+    "source": "EXACT"
+  },
+  "EVNP-0003": {
+    "latitude": 27.802943,
+    "longitude": 84.749945,
+    "source": "EXACT"
+  },
+  "EVNP-0004": {
+    "latitude": 27.82377,
+    "longitude": 86.221467,
+    "source": "EXACT"
+  },
+  "EVNP-0005": {
+    "latitude": 27.601235,
+    "longitude": 85.57524,
+    "source": "EXACT"
+  },
+  "EVNP-0006": {
+    "latitude": 27.728477,
+    "longitude": 85.13773,
+    "source": "EXACT"
+  },
+  "EVNP-0007": {
+    "latitude": 27.856162,
+    "longitude": 84.560951,
+    "source": "EXACT"
+  },
+  "EVNP-0008": {
+    "latitude": 27.667981,
+    "longitude": 84.438829,
+    "source": "EXACT"
+  },
+  "EVNP-0009": {
+    "latitude": 27.33067,
+    "longitude": 85.993644,
+    "source": "EXACT"
+  },
+  "EVNP-0010": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0011": {
+    "latitude": 26.884356,
+    "longitude": 85.796799,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0012": {
+    "latitude": 26.884356,
+    "longitude": 85.796799,
+    "source": "EXACT"
+  },
+  "EVNP-0013": {
+    "latitude": 26.968818,
+    "longitude": 85.563876,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0014": {
+    "latitude": 26.641014,
+    "longitude": 87.137848,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0015": {
+    "latitude": 26.74167,
+    "longitude": 86.349435,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0016": {
+    "latitude": 28.218694,
+    "longitude": 83.97764,
+    "source": "EXACT"
+  },
+  "EVNP-0017": {
+    "latitude": 26.658456,
+    "longitude": 87.701062,
+    "source": "EXACT"
+  },
+  "EVNP-0018": {
+    "latitude": 28.591192,
+    "longitude": 81.618955,
+    "source": "EXACT"
+  },
+  "EVNP-0019": {
+    "latitude": 27.436539,
+    "longitude": 85.055081,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0020": {
+    "latitude": 28.165874,
+    "longitude": 84.093514,
+    "source": "EXACT"
+  },
+  "EVNP-0021": {
+    "latitude": 27.694328,
+    "longitude": 83.464372,
+    "source": "EXACT"
+  },
+  "EVNP-0022": {
+    "latitude": 26.66225,
+    "longitude": 87.274896,
+    "source": "EXACT"
+  },
+  "EVNP-0023": {
+    "latitude": 26.462301,
+    "longitude": 87.281617,
+    "source": "EXACT"
+  },
+  "EVNP-0024": {
+    "latitude": 28.096095,
+    "longitude": 81.771441,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0025": {
+    "latitude": 28.703304,
+    "longitude": 80.567017,
+    "source": "EXACT"
+  },
+  "EVNP-0026": {
+    "latitude": 27.925799,
+    "longitude": 85.248672,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0027": {
+    "latitude": 27.925799,
+    "longitude": 85.248672,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0028": {
+    "latitude": 28.219295,
+    "longitude": 83.676813,
+    "source": "EXACT"
+  },
+  "EVNP-0029": {
+    "latitude": 27.97888,
+    "longitude": 82.468418,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0030": {
+    "latitude": 28.628025,
+    "longitude": 81.152893,
+    "source": "EXACT"
+  },
+  "EVNP-0031": {
+    "latitude": 27.632197,
+    "longitude": 85.516492,
+    "source": "EXACT"
+  },
+  "EVNP-0032": {
+    "latitude": 27.690288,
+    "longitude": 85.215582,
+    "source": "EXACT"
+  },
+  "EVNP-0033": {
+    "latitude": 27.618086,
+    "longitude": 84.45362,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0034": {
+    "latitude": 27.010799,
+    "longitude": 84.886558,
+    "source": "EXACT"
+  },
+  "EVNP-0035": {
+    "latitude": 28.731525,
+    "longitude": 80.903698,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0036": {
+    "latitude": 28.131213,
+    "longitude": 82.298306,
+    "source": "EXACT"
+  },
+  "EVNP-0037": {
+    "latitude": 27.518103,
+    "longitude": 83.452069,
+    "source": "EXACT"
+  },
+  "EVNP-0038": {
+    "latitude": 28.096095,
+    "longitude": 81.771441,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0039": {
+    "latitude": 26.583735,
+    "longitude": 87.885701,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0040": {
+    "latitude": 27.931202,
+    "longitude": 82.341025,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0041": {
+    "latitude": 27.618086,
+    "longitude": 84.45362,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0042": {
+    "latitude": 27.677787,
+    "longitude": 83.460871,
+    "source": "EXACT"
+  },
+  "EVNP-0043": {
+    "latitude": 27.97888,
+    "longitude": 82.468418,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0044": {
+    "latitude": 28.039361,
+    "longitude": 82.486686,
+    "source": "EXACT"
+  },
+  "EVNP-0045": {
+    "latitude": 26.583735,
+    "longitude": 87.885701,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0046": {
+    "latitude": 27.670404,
+    "longitude": 84.437481,
+    "source": "EXACT"
+  },
+  "EVNP-0047": {
+    "latitude": 26.641014,
+    "longitude": 87.137848,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0048": {
+    "latitude": 28.239952,
+    "longitude": 83.987955,
+    "source": "EXACT"
+  },
+  "EVNP-0049": {
+    "latitude": 28.096095,
+    "longitude": 81.771441,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0050": {
+    "latitude": 26.851091,
+    "longitude": 86.035892,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0051": {
+    "latitude": 26.641014,
+    "longitude": 87.137848,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0052": {
+    "latitude": 28.731525,
+    "longitude": 80.903698,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0053": {
+    "latitude": 27.548774,
+    "longitude": 83.403353,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0054": {
+    "latitude": 26.583735,
+    "longitude": 87.885701,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0055": {
+    "latitude": 27.223785,
+    "longitude": 84.826471,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0056": {
+    "latitude": 26.610519,
+    "longitude": 87.472851,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0057": {
+    "latitude": 27.618086,
+    "longitude": 84.45362,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0058": {
+    "latitude": 27.708317,
+    "longitude": 85.320582,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0059": {
+    "latitude": 27.223785,
+    "longitude": 84.826471,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0060": {
+    "latitude": 27.708317,
+    "longitude": 85.320582,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0061": {
+    "latitude": 27.676564,
+    "longitude": 85.316607,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0062": {
+    "latitude": 27.708317,
+    "longitude": 85.320582,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0063": {
+    "latitude": 27.653229,
+    "longitude": 85.385238,
+    "source": "EXACT"
+  },
+  "EVNP-0064": {
+    "latitude": 27.677197,
+    "longitude": 85.317144,
+    "source": "EXACT"
+  },
+  "EVNP-0065": {
+    "latitude": 27.708317,
+    "longitude": 85.320582,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0066": {
+    "latitude": 27.708317,
+    "longitude": 85.320582,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0067": {
+    "latitude": 27.708317,
+    "longitude": 85.320582,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0068": {
+    "latitude": 27.708317,
+    "longitude": 85.320582,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0069": {
+    "latitude": 28.707846,
+    "longitude": 80.58659,
+    "source": "EXACT"
+  },
+  "EVNP-0070": {
+    "latitude": 27.97888,
+    "longitude": 82.468418,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0071": {
+    "latitude": 27.618086,
+    "longitude": 84.45362,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0072": {
+    "latitude": 27.618086,
+    "longitude": 84.45362,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0073": {
+    "latitude": 27.618086,
+    "longitude": 84.45362,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0074": {
+    "latitude": 28.643439,
+    "longitude": 81.282598,
+    "source": "EXACT"
+  },
+  "EVNP-0075": {
+    "latitude": 28.731525,
+    "longitude": 80.903698,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0076": {
+    "latitude": 28.085537,
+    "longitude": 81.645459,
+    "source": "EXACT"
+  },
+  "EVNP-0077": {
+    "latitude": 28.096095,
+    "longitude": 81.771441,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0078": {
+    "latitude": 27.97888,
+    "longitude": 82.468418,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0079": {
+    "latitude": 27.548774,
+    "longitude": 83.403353,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0080": {
+    "latitude": 27.548774,
+    "longitude": 83.403353,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0081": {
+    "latitude": 27.548774,
+    "longitude": 83.403353,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0082": {
+    "latitude": 27.548774,
+    "longitude": 83.403353,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0083": {
+    "latitude": 27.618086,
+    "longitude": 84.45362,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0084": {
+    "latitude": 26.610519,
+    "longitude": 87.472851,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0085": {
+    "latitude": 26.639792,
+    "longitude": 87.977795,
+    "source": "EXACT"
+  },
+  "EVNP-0086": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0087": {
+    "latitude": 27.01487,
+    "longitude": 84.888178,
+    "source": "EXACT"
+  },
+  "EVNP-0088": {
+    "latitude": 27.223785,
+    "longitude": 84.826471,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0089": {
+    "latitude": 27.436539,
+    "longitude": 85.055081,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0090": {
+    "latitude": 27.436539,
+    "longitude": 85.055081,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0091": {
+    "latitude": 26.610519,
+    "longitude": 87.472851,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0092": {
+    "latitude": 26.641014,
+    "longitude": 87.137848,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0093": {
+    "latitude": 26.583735,
+    "longitude": 87.885701,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0094": {
+    "latitude": 28.344838,
+    "longitude": 83.971696,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0095": {
+    "latitude": 28.344838,
+    "longitude": 83.971696,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0096": {
+    "latitude": 28.344838,
+    "longitude": 83.971696,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0097": {
+    "latitude": 28.208025,
+    "longitude": 83.958603,
+    "source": "EXACT"
+  },
+  "EVNP-0098": {
+    "latitude": 28.008521,
+    "longitude": 84.906139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0099": {
+    "latitude": 26.641014,
+    "longitude": 87.137848,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0100": {
+    "latitude": 26.583735,
+    "longitude": 87.885701,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0101": {
+    "latitude": 28.344838,
+    "longitude": 83.971696,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0102": {
+    "latitude": 27.548774,
+    "longitude": 83.403353,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0103": {
+    "latitude": 27.548774,
+    "longitude": 83.403353,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0104": {
+    "latitude": 28.344838,
+    "longitude": 83.971696,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0105": {
+    "latitude": 26.641014,
+    "longitude": 87.137848,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0106": {
+    "latitude": 26.583735,
+    "longitude": 87.885701,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0107": {
+    "latitude": 27.548774,
+    "longitude": 83.403353,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0108": {
+    "latitude": 27.153648,
+    "longitude": 84.969471,
+    "source": "EXACT"
+  },
+  "EVNP-0109": {
+    "latitude": 27.436539,
+    "longitude": 85.055081,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0110": {
+    "latitude": 27.618086,
+    "longitude": 84.45362,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0111": {
+    "latitude": 27.548774,
+    "longitude": 83.403353,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0112": {
+    "latitude": 28.096095,
+    "longitude": 81.771441,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0113": {
+    "latitude": 28.731525,
+    "longitude": 80.903698,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0114": {
+    "latitude": 26.851091,
+    "longitude": 86.035892,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0115": {
+    "latitude": 27.97888,
+    "longitude": 82.468418,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0116": {
+    "latitude": 27.671113,
+    "longitude": 85.426168,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0117": {
+    "latitude": 27.618086,
+    "longitude": 84.45362,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0118": {
+    "latitude": 27.715459,
+    "longitude": 85.313326,
+    "source": "EXACT"
+  },
+  "EVNP-0119": {
+    "latitude": 28.096095,
+    "longitude": 81.771441,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0120": {
+    "latitude": 26.885407,
+    "longitude": 87.920305,
+    "source": "EXACT"
+  },
+  "EVNP-0121": {
+    "latitude": 27.032683,
+    "longitude": 87.314202,
+    "source": "EXACT"
+  },
+  "EVNP-0122": {
+    "latitude": 26.714387,
+    "longitude": 86.481247,
+    "source": "EXACT"
+  },
+  "EVNP-0123": {
+    "latitude": 26.851091,
+    "longitude": 86.035892,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0124": {
+    "latitude": 26.932824,
+    "longitude": 86.519695,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0125": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "EXACT"
+  },
+  "EVNP-0126": {
+    "latitude": 28.008521,
+    "longitude": 84.906139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0127": {
+    "latitude": 27.905913,
+    "longitude": 85.756305,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0128": {
+    "latitude": 27.82377,
+    "longitude": 86.221467,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0129": {
+    "latitude": 27.905913,
+    "longitude": 85.756305,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0130": {
+    "latitude": 27.92316,
+    "longitude": 85.147993,
+    "source": "EXACT"
+  },
+  "EVNP-0131": {
+    "latitude": 27.671113,
+    "longitude": 85.426168,
+    "source": "EXACT"
+  },
+  "EVNP-0132": {
+    "latitude": 27.755654,
+    "longitude": 85.320059,
+    "source": "EXACT"
+  },
+  "EVNP-0133": {
+    "latitude": 27.381618,
+    "longitude": 86.060756,
+    "source": "EXACT"
+  },
+  "EVNP-0134": {
+    "latitude": 27.443272,
+    "longitude": 85.822712,
+    "source": "EXACT"
+  },
+  "EVNP-0135": {
+    "latitude": 27.70103,
+    "longitude": 84.428866,
+    "source": "EXACT"
+  },
+  "EVNP-0136": {
+    "latitude": 27.429585,
+    "longitude": 85.032659,
+    "source": "EXACT"
+  },
+  "EVNP-0137": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0138": {
+    "latitude": 27.670451,
+    "longitude": 85.41042,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0139": {
+    "latitude": 27.651681,
+    "longitude": 85.461825,
+    "source": "EXACT"
+  },
+  "EVNP-0140": {
+    "latitude": 27.055239,
+    "longitude": 84.93033,
+    "source": "EXACT"
+  },
+  "EVNP-0141": {
+    "latitude": 28.096095,
+    "longitude": 81.771441,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0142": {
+    "latitude": 28.657382,
+    "longitude": 81.513783,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0143": {
+    "latitude": 28.966575,
+    "longitude": 80.178546,
+    "source": "EXACT"
+  },
+  "EVNP-0144": {
+    "latitude": 29.209193,
+    "longitude": 80.500866,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0145": {
+    "latitude": 28.731525,
+    "longitude": 80.903698,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0146": {
+    "latitude": 28.643487,
+    "longitude": 81.28144,
+    "source": "EXACT"
+  },
+  "EVNP-0147": {
+    "latitude": 27.336302,
+    "longitude": 86.448946,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0148": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0149": {
+    "latitude": 28.209538,
+    "longitude": 83.991402,
+    "source": "EXACT"
+  },
+  "EVNP-0150": {
+    "latitude": 27.97888,
+    "longitude": 82.468418,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0151": {
+    "latitude": 27.548774,
+    "longitude": 83.403353,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0152": {
+    "latitude": 28.040122,
+    "longitude": 82.48437,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0153": {
+    "latitude": 27.712678,
+    "longitude": 85.328703,
+    "source": "EXACT"
+  },
+  "EVNP-0154": {
+    "latitude": 27.649941,
+    "longitude": 85.332544,
+    "source": "EXACT"
+  },
+  "EVNP-0155": {
+    "latitude": 27.708317,
+    "longitude": 85.320582,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0156": {
+    "latitude": 27.82377,
+    "longitude": 86.221467,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0157": {
+    "latitude": 27.82377,
+    "longitude": 86.221467,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0158": {
+    "latitude": 28.09946,
+    "longitude": 83.870834,
+    "source": "EXACT"
+  },
+  "EVNP-0159": {
+    "latitude": 26.583735,
+    "longitude": 87.885701,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0160": {
+    "latitude": 27.747423,
+    "longitude": 84.757882,
+    "source": "EXACT"
+  },
+  "EVNP-0161": {
+    "latitude": 26.583735,
+    "longitude": 87.885701,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0162": {
+    "latitude": 26.583735,
+    "longitude": 87.885701,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0163": {
+    "latitude": 27.149073,
+    "longitude": 87.855048,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0164": {
+    "latitude": 26.641014,
+    "longitude": 87.137848,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0165": {
+    "latitude": 26.539598,
+    "longitude": 86.74855,
+    "source": "EXACT"
+  },
+  "EVNP-0166": {
+    "latitude": 26.66225,
+    "longitude": 87.274896,
+    "source": "EXACT"
+  },
+  "EVNP-0167": {
+    "latitude": 26.74167,
+    "longitude": 86.349435,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0168": {
+    "latitude": 27.017522,
+    "longitude": 87.313263,
+    "source": "EXACT"
+  },
+  "EVNP-0169": {
+    "latitude": 27.9783,
+    "longitude": 84.079791,
+    "source": "EXACT"
+  },
+  "EVNP-0170": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0171": {
+    "latitude": 26.802286,
+    "longitude": 86.696172,
+    "source": "EXACT"
+  },
+  "EVNP-0172": {
+    "latitude": 27.247328,
+    "longitude": 85.935357,
+    "source": "EXACT"
+  },
+  "EVNP-0173": {
+    "latitude": 27.366679,
+    "longitude": 87.2068,
+    "source": "EXACT"
+  },
+  "EVNP-0174": {
+    "latitude": 27.663563,
+    "longitude": 86.048832,
+    "source": "EXACT"
+  },
+  "EVNP-0175": {
+    "latitude": 27.101996,
+    "longitude": 85.965617,
+    "source": "EXACT"
+  },
+  "EVNP-0176": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0177": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0178": {
+    "latitude": 27.641533,
+    "longitude": 84.125164,
+    "source": "EXACT"
+  },
+  "EVNP-0179": {
+    "latitude": 27.963125,
+    "longitude": 84.409678,
+    "source": "EXACT"
+  },
+  "EVNP-0180": {
+    "latitude": 27.653764,
+    "longitude": 84.031137,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0181": {
+    "latitude": 28.231316,
+    "longitude": 84.376144,
+    "source": "EXACT"
+  },
+  "EVNP-0182": {
+    "latitude": 28.096095,
+    "longitude": 81.771441,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0183": {
+    "latitude": 28.356247,
+    "longitude": 83.142624,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0184": {
+    "latitude": 27.653764,
+    "longitude": 84.031137,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0185": {
+    "latitude": 28.095973,
+    "longitude": 83.329486,
+    "source": "EXACT"
+  },
+  "EVNP-0186": {
+    "latitude": 27.675546,
+    "longitude": 85.338318,
+    "source": "EXACT"
+  },
+  "EVNP-0187": {
+    "latitude": 27.708317,
+    "longitude": 85.320582,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0188": {
+    "latitude": 27.708317,
+    "longitude": 85.320582,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0189": {
+    "latitude": 27.700399,
+    "longitude": 83.465767,
+    "source": "EXACT"
+  },
+  "EVNP-0190": {
+    "latitude": 27.653764,
+    "longitude": 84.031137,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0191": {
+    "latitude": 27.653764,
+    "longitude": 84.031137,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0192": {
+    "latitude": 28.198747,
+    "longitude": 81.690913,
+    "source": "EXACT"
+  },
+  "EVNP-0193": {
+    "latitude": 29.084713,
+    "longitude": 80.559578,
+    "source": "EXACT"
+  },
+  "EVNP-0194": {
+    "latitude": 27.981772,
+    "longitude": 83.757228,
+    "source": "EXACT"
+  },
+  "EVNP-0195": {
+    "latitude": 28.202125,
+    "longitude": 83.728034,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0196": {
+    "latitude": 27.700399,
+    "longitude": 83.465767,
+    "source": "EXACT"
+  },
+  "EVNP-0197": {
+    "latitude": 28.509674,
+    "longitude": 82.029162,
+    "source": "EXACT"
+  },
+  "EVNP-0198": {
+    "latitude": 26.932824,
+    "longitude": 86.519695,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0199": {
+    "latitude": 27.632624,
+    "longitude": 83.570993,
+    "source": "EXACT"
+  },
+  "EVNP-0200": {
+    "latitude": 27.138211,
+    "longitude": 86.713718,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0201": {
+    "latitude": 28.431049,
+    "longitude": 81.125035,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0202": {
+    "latitude": 28.371464,
+    "longitude": 81.451543,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0203": {
+    "latitude": 28.119882,
+    "longitude": 82.829981,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0204": {
+    "latitude": 27.841121,
+    "longitude": 82.761032,
+    "source": "EXACT"
+  },
+  "EVNP-0205": {
+    "latitude": 27.5261,
+    "longitude": 83.450484,
+    "source": "EXACT"
+  },
+  "EVNP-0206": {
+    "latitude": 27.160748,
+    "longitude": 85.36607,
+    "source": "EXACT"
+  },
+  "EVNP-0207": {
+    "latitude": 26.550119,
+    "longitude": 86.890148,
+    "source": "EXACT"
+  },
+  "EVNP-0208": {
+    "latitude": 27.811688,
+    "longitude": 84.961754,
+    "source": "EXACT"
+  },
+  "EVNP-0209": {
+    "latitude": 27.744178,
+    "longitude": 85.375502,
+    "source": "EXACT"
+  },
+  "EVNP-0210": {
+    "latitude": 27.905913,
+    "longitude": 85.756305,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0211": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0212": {
+    "latitude": 28.657382,
+    "longitude": 81.513783,
+    "source": "EXACT"
+  },
+  "EVNP-0213": {
+    "latitude": 28.802916,
+    "longitude": 80.551017,
+    "source": "EXACT"
+  },
+  "EVNP-0214": {
+    "latitude": 27.708317,
+    "longitude": 85.320582,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0215": {
+    "latitude": 27.708317,
+    "longitude": 85.320582,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0216": {
+    "latitude": 27.742238,
+    "longitude": 85.332617,
+    "source": "EXACT"
+  },
+  "EVNP-0217": {
+    "latitude": 27.264367,
+    "longitude": 85.739312,
+    "source": "EXACT"
+  },
+  "EVNP-0218": {
+    "latitude": 27.010799,
+    "longitude": 84.886558,
+    "source": "EXACT"
+  },
+  "EVNP-0219": {
+    "latitude": 26.884356,
+    "longitude": 85.796799,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0220": {
+    "latitude": 27.436539,
+    "longitude": 85.055081,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0221": {
+    "latitude": 26.610519,
+    "longitude": 87.472851,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0222": {
+    "latitude": 26.583735,
+    "longitude": 87.885701,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0223": {
+    "latitude": 27.548774,
+    "longitude": 83.403353,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0224": {
+    "latitude": 28.731525,
+    "longitude": 80.903698,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0225": {
+    "latitude": 28.096095,
+    "longitude": 81.771441,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0226": {
+    "latitude": 28.344838,
+    "longitude": 83.971696,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0227": {
+    "latitude": 28.657382,
+    "longitude": 81.513783,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0228": {
+    "latitude": 26.610519,
+    "longitude": 87.472851,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0229": {
+    "latitude": 26.851091,
+    "longitude": 86.035892,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0230": {
+    "latitude": 26.607162,
+    "longitude": 86.74938,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0231": {
+    "latitude": 28.008521,
+    "longitude": 84.906139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0232": {
+    "latitude": 27.618086,
+    "longitude": 84.45362,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0233": {
+    "latitude": 27.618086,
+    "longitude": 84.45362,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0234": {
+    "latitude": 28.008521,
+    "longitude": 84.906139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0235": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0236": {
+    "latitude": 27.704949,
+    "longitude": 84.402452,
+    "source": "EXACT"
+  },
+  "EVNP-0237": {
+    "latitude": 27.618086,
+    "longitude": 84.45362,
+    "source": "EXACT"
+  },
+  "EVNP-0238": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0239": {
+    "latitude": 28.197493,
+    "longitude": 81.692543,
+    "source": "EXACT"
+  },
+  "EVNP-0240": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0241": {
+    "latitude": 26.802286,
+    "longitude": 86.696172,
+    "source": "EXACT"
+  },
+  "EVNP-0242": {
+    "latitude": 27.975697,
+    "longitude": 83.127113,
+    "source": "EXACT"
+  },
+  "EVNP-0243": {
+    "latitude": 27.931873,
+    "longitude": 83.145959,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0244": {
+    "latitude": 27.708317,
+    "longitude": 85.320582,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0245": {
+    "latitude": 27.708317,
+    "longitude": 85.320582,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0246": {
+    "latitude": 27.618086,
+    "longitude": 84.45362,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0247": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0248": {
+    "latitude": 26.66798,
+    "longitude": 87.275134,
+    "source": "EXACT"
+  },
+  "EVNP-0249": {
+    "latitude": 26.929084,
+    "longitude": 85.956268,
+    "source": "EXACT"
+  },
+  "EVNP-0250": {
+    "latitude": 27.548774,
+    "longitude": 83.403353,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0251": {
+    "latitude": 28.731525,
+    "longitude": 80.903698,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0252": {
+    "latitude": 28.344838,
+    "longitude": 83.971696,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0253": {
+    "latitude": 27.548774,
+    "longitude": 83.403353,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0254": {
+    "latitude": 27.676564,
+    "longitude": 85.316607,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0255": {
+    "latitude": 27.618086,
+    "longitude": 84.45362,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0256": {
+    "latitude": 27.604322,
+    "longitude": 85.582276,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0257": {
+    "latitude": 27.708317,
+    "longitude": 85.320582,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0258": {
+    "latitude": 28.008521,
+    "longitude": 84.906139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0259": {
+    "latitude": 27.935508,
+    "longitude": 84.223646,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0260": {
+    "latitude": 27.82377,
+    "longitude": 86.221467,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0261": {
+    "latitude": 28.008521,
+    "longitude": 84.906139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0262": {
+    "latitude": 27.935508,
+    "longitude": 84.223646,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0263": {
+    "latitude": 28.28756,
+    "longitude": 84.418944,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0264": {
+    "latitude": 27.618086,
+    "longitude": 84.45362,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0265": {
+    "latitude": 27.925799,
+    "longitude": 85.248672,
+    "source": "EXACT"
+  },
+  "EVNP-0266": {
+    "latitude": 28.209538,
+    "longitude": 83.991402,
+    "source": "EXACT"
+  },
+  "EVNP-0267": {
+    "latitude": 27.813705,
+    "longitude": 84.82724,
+    "source": "EXACT"
+  },
+  "EVNP-0268": {
+    "latitude": 28.802916,
+    "longitude": 80.551017,
+    "source": "EXACT"
+  },
+  "EVNP-0269": {
+    "latitude": 26.990444,
+    "longitude": 85.893314,
+    "source": "EXACT"
+  },
+  "EVNP-0270": {
+    "latitude": 27.655829,
+    "longitude": 85.333528,
+    "source": "EXACT"
+  },
+  "EVNP-0271": {
+    "latitude": 26.66225,
+    "longitude": 87.274896,
+    "source": "EXACT"
+  },
+  "EVNP-0272": {
+    "latitude": 27.731118,
+    "longitude": 85.319052,
+    "source": "EXACT"
+  },
+  "EVNP-0273": {
+    "latitude": 27.657521,
+    "longitude": 85.325056,
+    "source": "EXACT"
+  },
+  "EVNP-0274": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "EXACT"
+  },
+  "EVNP-0275": {
+    "latitude": 26.665015,
+    "longitude": 87.701151,
+    "source": "EXACT"
+  },
+  "EVNP-0276": {
+    "latitude": 27.931202,
+    "longitude": 82.341025,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0277": {
+    "latitude": 28.198747,
+    "longitude": 81.690913,
+    "source": "EXACT"
+  },
+  "EVNP-0278": {
+    "latitude": 27.700399,
+    "longitude": 83.465767,
+    "source": "EXACT"
+  },
+  "EVNP-0279": {
+    "latitude": 27.760173,
+    "longitude": 84.279362,
+    "source": "EXACT"
+  },
+  "EVNP-0280": {
+    "latitude": 27.721991,
+    "longitude": 85.373052,
+    "source": "EXACT"
+  },
+  "EVNP-0281": {
+    "latitude": 26.962807,
+    "longitude": 86.370503,
+    "source": "EXACT"
+  },
+  "EVNP-0282": {
+    "latitude": 28.095973,
+    "longitude": 83.329486,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0283": {
+    "latitude": 26.996944,
+    "longitude": 85.901167,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0284": {
+    "latitude": 26.999409,
+    "longitude": 85.903233,
+    "source": "EXACT"
+  },
+  "EVNP-0285": {
+    "latitude": 26.980087,
+    "longitude": 85.918984,
+    "source": "EXACT"
+  },
+  "EVNP-0286": {
+    "latitude": 27.031662,
+    "longitude": 84.890516,
+    "source": "EXACT"
+  },
+  "EVNP-0287": {
+    "latitude": 27.018919,
+    "longitude": 84.883809,
+    "source": "EXACT"
+  },
+  "EVNP-0288": {
+    "latitude": 27.223785,
+    "longitude": 84.826471,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0289": {
+    "latitude": 27.008451,
+    "longitude": 84.87428,
+    "source": "EXACT"
+  },
+  "EVNP-0290": {
+    "latitude": 27.011339,
+    "longitude": 84.897061,
+    "source": "EXACT"
+  },
+  "EVNP-0291": {
+    "latitude": 26.988977,
+    "longitude": 85.28289,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0292": {
+    "latitude": 27.111937,
+    "longitude": 85.372703,
+    "source": "EXACT"
+  },
+  "EVNP-0293": {
+    "latitude": 26.851091,
+    "longitude": 86.035892,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0294": {
+    "latitude": 26.851091,
+    "longitude": 86.035892,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0295": {
+    "latitude": 26.707563,
+    "longitude": 85.930422,
+    "source": "EXACT"
+  },
+  "EVNP-0296": {
+    "latitude": 26.759338,
+    "longitude": 85.928359,
+    "source": "EXACT"
+  },
+  "EVNP-0297": {
+    "latitude": 26.729527,
+    "longitude": 85.929294,
+    "source": "EXACT"
+  },
+  "EVNP-0298": {
+    "latitude": 26.74167,
+    "longitude": 86.349435,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0299": {
+    "latitude": 26.714387,
+    "longitude": 86.481247,
+    "source": "EXACT"
+  },
+  "EVNP-0300": {
+    "latitude": 26.551993,
+    "longitude": 86.882907,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0301": {
+    "latitude": 26.929084,
+    "longitude": 85.956268,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0302": {
+    "latitude": 28.813513,
+    "longitude": 80.562078,
+    "source": "EXACT"
+  },
+  "EVNP-0303": {
+    "latitude": 28.642637,
+    "longitude": 81.281266,
+    "source": "EXACT"
+  },
+  "EVNP-0304": {
+    "latitude": 28.802916,
+    "longitude": 80.551017,
+    "source": "EXACT"
+  },
+  "EVNP-0305": {
+    "latitude": 28.704712,
+    "longitude": 80.585359,
+    "source": "EXACT"
+  },
+  "EVNP-0306": {
+    "latitude": 28.703675,
+    "longitude": 80.586771,
+    "source": "EXACT"
+  },
+  "EVNP-0307": {
+    "latitude": 28.704687,
+    "longitude": 80.574953,
+    "source": "EXACT"
+  },
+  "EVNP-0308": {
+    "latitude": 28.966575,
+    "longitude": 80.178546,
+    "source": "EXACT"
+  },
+  "EVNP-0309": {
+    "latitude": 28.731525,
+    "longitude": 80.903698,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0310": {
+    "latitude": 28.675638,
+    "longitude": 81.681394,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0311": {
+    "latitude": 26.607936,
+    "longitude": 87.156772,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0312": {
+    "latitude": 26.804538,
+    "longitude": 86.879797,
+    "source": "EXACT"
+  },
+  "EVNP-0313": {
+    "latitude": 26.610519,
+    "longitude": 87.472851,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0314": {
+    "latitude": 26.610519,
+    "longitude": 87.472851,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0315": {
+    "latitude": 26.452587,
+    "longitude": 87.276422,
+    "source": "EXACT"
+  },
+  "EVNP-0316": {
+    "latitude": 26.464037,
+    "longitude": 87.285297,
+    "source": "EXACT"
+  },
+  "EVNP-0317": {
+    "latitude": 26.610519,
+    "longitude": 87.472851,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0318": {
+    "latitude": 26.643037,
+    "longitude": 87.991865,
+    "source": "EXACT"
+  },
+  "EVNP-0319": {
+    "latitude": 26.583735,
+    "longitude": 87.885701,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0320": {
+    "latitude": 26.643037,
+    "longitude": 87.991865,
+    "source": "EXACT"
+  },
+  "EVNP-0321": {
+    "latitude": 26.583735,
+    "longitude": 87.885701,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0322": {
+    "latitude": 26.647488,
+    "longitude": 87.992828,
+    "source": "EXACT"
+  },
+  "EVNP-0323": {
+    "latitude": 26.583735,
+    "longitude": 87.885701,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0324": {
+    "latitude": 27.023338,
+    "longitude": 87.314078,
+    "source": "EXACT"
+  },
+  "EVNP-0325": {
+    "latitude": 26.610519,
+    "longitude": 87.472851,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0326": {
+    "latitude": 26.857637,
+    "longitude": 87.321516,
+    "source": "EXACT"
+  },
+  "EVNP-0327": {
+    "latitude": 26.861097,
+    "longitude": 88.081626,
+    "source": "EXACT"
+  },
+  "EVNP-0328": {
+    "latitude": 26.787063,
+    "longitude": 86.696766,
+    "source": "EXACT"
+  },
+  "EVNP-0329": {
+    "latitude": 26.662813,
+    "longitude": 87.378203,
+    "source": "EXACT"
+  },
+  "EVNP-0330": {
+    "latitude": 26.910058,
+    "longitude": 87.926854,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0331": {
+    "latitude": 26.638497,
+    "longitude": 87.274636,
+    "source": "EXACT"
+  },
+  "EVNP-0332": {
+    "latitude": 26.641014,
+    "longitude": 87.137848,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0333": {
+    "latitude": 26.667938,
+    "longitude": 87.275047,
+    "source": "EXACT"
+  },
+  "EVNP-0334": {
+    "latitude": 26.970862,
+    "longitude": 86.342984,
+    "source": "EXACT"
+  },
+  "EVNP-0335": {
+    "latitude": 26.610519,
+    "longitude": 87.472851,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0336": {
+    "latitude": 27.145363,
+    "longitude": 87.767172,
+    "source": "EXACT"
+  },
+  "EVNP-0337": {
+    "latitude": 26.63721,
+    "longitude": 87.911451,
+    "source": "EXACT"
+  },
+  "EVNP-0338": {
+    "latitude": 27.931873,
+    "longitude": 83.145959,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0339": {
+    "latitude": 27.493782,
+    "longitude": 83.473702,
+    "source": "EXACT"
+  },
+  "EVNP-0340": {
+    "latitude": 27.524838,
+    "longitude": 83.455234,
+    "source": "EXACT"
+  },
+  "EVNP-0341": {
+    "latitude": 27.484917,
+    "longitude": 83.462097,
+    "source": "EXACT"
+  },
+  "EVNP-0342": {
+    "latitude": 27.518103,
+    "longitude": 83.452069,
+    "source": "EXACT"
+  },
+  "EVNP-0343": {
+    "latitude": 27.838612,
+    "longitude": 82.754141,
+    "source": "EXACT"
+  },
+  "EVNP-0344": {
+    "latitude": 27.700399,
+    "longitude": 83.465767,
+    "source": "EXACT"
+  },
+  "EVNP-0345": {
+    "latitude": 27.548774,
+    "longitude": 83.403353,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0346": {
+    "latitude": 27.687013,
+    "longitude": 83.474109,
+    "source": "EXACT"
+  },
+  "EVNP-0347": {
+    "latitude": 27.685313,
+    "longitude": 83.477359,
+    "source": "EXACT"
+  },
+  "EVNP-0348": {
+    "latitude": 27.584362,
+    "longitude": 83.871612,
+    "source": "EXACT"
+  },
+  "EVNP-0349": {
+    "latitude": 27.97888,
+    "longitude": 82.468418,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0350": {
+    "latitude": 27.97888,
+    "longitude": 82.468418,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0351": {
+    "latitude": 28.197826,
+    "longitude": 81.680708,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0352": {
+    "latitude": 27.841362,
+    "longitude": 82.732362,
+    "source": "EXACT"
+  },
+  "EVNP-0353": {
+    "latitude": 27.462042,
+    "longitude": 83.282502,
+    "source": "EXACT"
+  },
+  "EVNP-0354": {
+    "latitude": 27.675239,
+    "longitude": 82.888032,
+    "source": "EXACT"
+  },
+  "EVNP-0355": {
+    "latitude": 28.072163,
+    "longitude": 81.632516,
+    "source": "EXACT"
+  },
+  "EVNP-0356": {
+    "latitude": 28.096095,
+    "longitude": 81.771441,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0357": {
+    "latitude": 28.038965,
+    "longitude": 81.612235,
+    "source": "EXACT"
+  },
+  "EVNP-0358": {
+    "latitude": 27.811051,
+    "longitude": 83.630439,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0359": {
+    "latitude": 27.815447,
+    "longitude": 83.536213,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0360": {
+    "latitude": 27.534129,
+    "longitude": 83.667604,
+    "source": "EXACT"
+  },
+  "EVNP-0361": {
+    "latitude": 27.935837,
+    "longitude": 83.437797,
+    "source": "EXACT"
+  },
+  "EVNP-0362": {
+    "latitude": 27.971463,
+    "longitude": 82.210922,
+    "source": "EXACT"
+  },
+  "EVNP-0363": {
+    "latitude": 27.484088,
+    "longitude": 83.450953,
+    "source": "EXACT"
+  },
+  "EVNP-0364": {
+    "latitude": 27.509887,
+    "longitude": 83.442703,
+    "source": "EXACT"
+  },
+  "EVNP-0365": {
+    "latitude": 28.371464,
+    "longitude": 81.451543,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0366": {
+    "latitude": 27.97888,
+    "longitude": 82.468418,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0367": {
+    "latitude": 28.133238,
+    "longitude": 82.287088,
+    "source": "EXACT"
+  },
+  "EVNP-0368": {
+    "latitude": 28.133047,
+    "longitude": 82.301547,
+    "source": "EXACT"
+  },
+  "EVNP-0369": {
+    "latitude": 27.618086,
+    "longitude": 84.45362,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0370": {
+    "latitude": 27.569562,
+    "longitude": 84.196812,
+    "source": "EXACT"
+  },
+  "EVNP-0371": {
+    "latitude": 27.670995,
+    "longitude": 84.435394,
+    "source": "EXACT"
+  },
+  "EVNP-0372": {
+    "latitude": 27.587683,
+    "longitude": 84.484364,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0373": {
+    "latitude": 27.581494,
+    "longitude": 84.49332,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0374": {
+    "latitude": 27.618086,
+    "longitude": 84.45362,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0375": {
+    "latitude": 28.008521,
+    "longitude": 84.906139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0376": {
+    "latitude": 27.644059,
+    "longitude": 85.098317,
+    "source": "EXACT"
+  },
+  "EVNP-0377": {
+    "latitude": 28.008521,
+    "longitude": 84.906139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0378": {
+    "latitude": 28.008521,
+    "longitude": 84.906139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0379": {
+    "latitude": 27.877788,
+    "longitude": 84.621266,
+    "source": "EXACT"
+  },
+  "EVNP-0380": {
+    "latitude": 28.008521,
+    "longitude": 84.906139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0381": {
+    "latitude": 27.810038,
+    "longitude": 84.824887,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0382": {
+    "latitude": 27.729862,
+    "longitude": 85.137297,
+    "source": "EXACT"
+  },
+  "EVNP-0383": {
+    "latitude": 27.604322,
+    "longitude": 85.582276,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0384": {
+    "latitude": 27.426963,
+    "longitude": 85.028953,
+    "source": "EXACT"
+  },
+  "EVNP-0385": {
+    "latitude": 27.435618,
+    "longitude": 85.035966,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0386": {
+    "latitude": 27.436539,
+    "longitude": 85.055081,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0387": {
+    "latitude": 27.428384,
+    "longitude": 85.031035,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0388": {
+    "latitude": 27.715399,
+    "longitude": 85.313371,
+    "source": "EXACT"
+  },
+  "EVNP-0389": {
+    "latitude": 27.708317,
+    "longitude": 85.320582,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0390": {
+    "latitude": 27.676564,
+    "longitude": 85.316607,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0391": {
+    "latitude": 27.746029,
+    "longitude": 85.327319,
+    "source": "EXACT"
+  },
+  "EVNP-0392": {
+    "latitude": 27.708317,
+    "longitude": 85.320582,
+    "source": "EXACT"
+  },
+  "EVNP-0393": {
+    "latitude": 27.698037,
+    "longitude": 85.325766,
+    "source": "EXACT"
+  },
+  "EVNP-0394": {
+    "latitude": 27.708762,
+    "longitude": 85.283109,
+    "source": "EXACT"
+  },
+  "EVNP-0395": {
+    "latitude": 27.704838,
+    "longitude": 85.316453,
+    "source": "EXACT"
+  },
+  "EVNP-0396": {
+    "latitude": 27.677197,
+    "longitude": 85.317144,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0397": {
+    "latitude": 27.692064,
+    "longitude": 85.319384,
+    "source": "EXACT"
+  },
+  "EVNP-0398": {
+    "latitude": 27.672381,
+    "longitude": 85.281018,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0399": {
+    "latitude": 27.717232,
+    "longitude": 85.330422,
+    "source": "EXACT"
+  },
+  "EVNP-0400": {
+    "latitude": 27.634187,
+    "longitude": 84.109766,
+    "source": "EXACT"
+  },
+  "EVNP-0401": {
+    "latitude": 27.581138,
+    "longitude": 85.156078,
+    "source": "EXACT"
+  },
+  "EVNP-0402": {
+    "latitude": 27.668082,
+    "longitude": 85.309404,
+    "source": "EXACT"
+  },
+  "EVNP-0403": {
+    "latitude": 27.677742,
+    "longitude": 85.316319,
+    "source": "EXACT"
+  },
+  "EVNP-0404": {
+    "latitude": 27.436539,
+    "longitude": 85.055081,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0405": {
+    "latitude": 27.747423,
+    "longitude": 84.757882,
+    "source": "EXACT"
+  },
+  "EVNP-0406": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0407": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0408": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0409": {
+    "latitude": 27.925799,
+    "longitude": 85.248672,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0410": {
+    "latitude": 27.578387,
+    "longitude": 84.494422,
+    "source": "EXACT"
+  },
+  "EVNP-0411": {
+    "latitude": 27.588787,
+    "longitude": 84.490703,
+    "source": "EXACT"
+  },
+  "EVNP-0412": {
+    "latitude": 27.231713,
+    "longitude": 85.913078,
+    "source": "EXACT"
+  },
+  "EVNP-0413": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0414": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0415": {
+    "latitude": 27.412888,
+    "longitude": 85.870016,
+    "source": "EXACT"
+  },
+  "EVNP-0416": {
+    "latitude": 27.185192,
+    "longitude": 86.070139,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0417": {
+    "latitude": 27.213335,
+    "longitude": 85.915497,
+    "source": "EXACT"
+  },
+  "EVNP-0418": {
+    "latitude": 27.905913,
+    "longitude": 85.756305,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0419": {
+    "latitude": 27.698812,
+    "longitude": 85.753641,
+    "source": "EXACT"
+  },
+  "EVNP-0420": {
+    "latitude": 27.620963,
+    "longitude": 85.085016,
+    "source": "EXACT"
+  },
+  "EVNP-0421": {
+    "latitude": 27.910938,
+    "longitude": 84.527687,
+    "source": "EXACT"
+  },
+  "EVNP-0422": {
+    "latitude": 28.266334,
+    "longitude": 83.599993,
+    "source": "EXACT"
+  },
+  "EVNP-0423": {
+    "latitude": 27.962862,
+    "longitude": 84.410047,
+    "source": "EXACT"
+  },
+  "EVNP-0424": {
+    "latitude": 28.28756,
+    "longitude": 84.418944,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0425": {
+    "latitude": 27.963125,
+    "longitude": 84.409678,
+    "source": "EXACT"
+  },
+  "EVNP-0426": {
+    "latitude": 27.935508,
+    "longitude": 84.223646,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0427": {
+    "latitude": 27.935508,
+    "longitude": 84.223646,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0428": {
+    "latitude": 27.728849,
+    "longitude": 85.39861,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0429": {
+    "latitude": 28.222513,
+    "longitude": 83.692953,
+    "source": "EXACT"
+  },
+  "EVNP-0430": {
+    "latitude": 28.205992,
+    "longitude": 83.963544,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0431": {
+    "latitude": 28.203962,
+    "longitude": 83.969578,
+    "source": "EXACT"
+  },
+  "EVNP-0432": {
+    "latitude": 28.203962,
+    "longitude": 83.969578,
+    "source": "EXACT"
+  },
+  "EVNP-0433": {
+    "latitude": 28.204213,
+    "longitude": 83.968234,
+    "source": "EXACT"
+  },
+  "EVNP-0434": {
+    "latitude": 28.206612,
+    "longitude": 83.993797,
+    "source": "EXACT"
+  },
+  "EVNP-0435": {
+    "latitude": 28.208362,
+    "longitude": 83.959484,
+    "source": "EXACT"
+  },
+  "EVNP-0436": {
+    "latitude": 28.207538,
+    "longitude": 83.962203,
+    "source": "EXACT"
+  },
+  "EVNP-0437": {
+    "latitude": 28.210621,
+    "longitude": 83.964496,
+    "source": "EXACT"
+  },
+  "EVNP-0438": {
+    "latitude": 28.344838,
+    "longitude": 83.971696,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0439": {
+    "latitude": 28.344838,
+    "longitude": 83.971696,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0440": {
+    "latitude": 27.708317,
+    "longitude": 85.320582,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0441": {
+    "latitude": 28.213142,
+    "longitude": 83.957286,
+    "source": "EXACT"
+  },
+  "EVNP-0442": {
+    "latitude": 28.344838,
+    "longitude": 83.971696,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0443": {
+    "latitude": 28.211409,
+    "longitude": 83.984373,
+    "source": "EXACT"
+  },
+  "EVNP-0444": {
+    "latitude": 28.220782,
+    "longitude": 83.957838,
+    "source": "EXACT"
+  },
+  "EVNP-0445": {
+    "latitude": 28.344838,
+    "longitude": 83.971696,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0446": {
+    "latitude": 28.239952,
+    "longitude": 83.987955,
+    "source": "EXACT"
+  },
+  "EVNP-0447": {
+    "latitude": 28.130112,
+    "longitude": 83.863203,
+    "source": "EXACT"
+  },
+  "EVNP-0448": {
+    "latitude": 27.985663,
+    "longitude": 83.768859,
+    "source": "EXACT"
+  },
+  "EVNP-0449": {
+    "latitude": 28.588062,
+    "longitude": 81.621141,
+    "source": "EXACT"
+  },
+  "EVNP-0450": {
+    "latitude": 28.643439,
+    "longitude": 81.282598,
+    "source": "EXACT"
+  },
+  "EVNP-0451": {
+    "latitude": 27.281904,
+    "longitude": 84.989503,
+    "source": "EXACT"
+  },
+  "EVNP-0452": {
+    "latitude": 27.672242,
+    "longitude": 85.377073,
+    "source": "EXACT"
+  },
+  "EVNP-0453": {
+    "latitude": 27.690745,
+    "longitude": 84.440217,
+    "source": "EXACT"
+  },
+  "EVNP-0454": {
+    "latitude": 27.688283,
+    "longitude": 84.425749,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0455": {
+    "latitude": 27.693213,
+    "longitude": 84.416516,
+    "source": "EXACT"
+  },
+  "EVNP-0456": {
+    "latitude": 27.799687,
+    "longitude": 84.738438,
+    "source": "EXACT"
+  },
+  "EVNP-0457": {
+    "latitude": 27.672253,
+    "longitude": 86.049305,
+    "source": "EXACT"
+  },
+  "EVNP-0458": {
+    "latitude": 27.82377,
+    "longitude": 86.221467,
+    "source": "APPROXIMATE"
+  },
+  "EVNP-0459": {
+    "latitude": 27.666612,
+    "longitude": 86.045734,
+    "source": "EXACT"
+  },
+  "EVNP-0460": {
+    "latitude": 27.82377,
+    "longitude": 86.221467,
+    "source": "APPROXIMATE"
+  }
+}

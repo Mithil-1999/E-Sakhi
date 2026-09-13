@@ -17,6 +17,14 @@ export type VerificationStatus =
 
 export type ChargingMode = "AC" | "DC" | "UNKNOWN";
 
+/**
+ * How a station's latitude/longitude was obtained — see
+ * docs/data-model.md §10. A different axis from VerificationStatus:
+ * EXACT/APPROXIMATE describe coordinate precision, not whether an admin
+ * has confirmed the record.
+ */
+export type CoordinateSource = "EXACT" | "APPROXIMATE" | "UNKNOWN";
+
 export type ConnectorRef = { code: string; label: string };
 
 export type ChargerSummary = {
@@ -37,6 +45,7 @@ export type StationListItem = {
   address: string;
   latitude: number | null;
   longitude: number | null;
+  coordinateSource: CoordinateSource;
   mapUrl: string | null;
   status: StationStatus;
   verificationStatus: VerificationStatus;

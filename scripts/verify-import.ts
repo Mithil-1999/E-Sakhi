@@ -43,11 +43,20 @@ async function main() {
   });
   console.log("chargers with zero resolved connectors:", chargersWithNoConnector);
 
-  // Coordinates — must be null for all rows in this initial import.
+  // Coordinates — the source spreadsheet itself never has any (see
+  // docs/data-model.md §8.5), but prisma/seed-coordinates.ts backfills
+  // real ones (exact or honestly-labeled approximate) right after this
+  // script's own station upsert, so a fully-seeded database should show
+  // (close to) all 460 here, split by CoordinateSource.
   const withCoords = await prisma.station.count({
     where: { OR: [{ latitude: { not: null } }, { longitude: { not: null } }] },
   });
-  console.log("stations with non-null coordinates (should be 0):", withCoords);
+  const byCoordinateSource = await prisma.station.groupBy({
+    by: ["coordinateSource"],
+    _count: true,
+  });
+  console.log("stations with non-null coordinates:", withCoords);
+  console.log("by coordinate source:", byCoordinateSource);
 
   // Verification distribution
   const byVerification = await prisma.station.groupBy({

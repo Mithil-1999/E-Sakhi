@@ -360,4 +360,43 @@ Result: **459 stations import as `ASSUMED`, 1 (`EVNP-0448`) as `NEEDS_REVIEW`, 0
 
 **What's seeded and why it's small:** five electric cars actually sold in Nepal (Tata Nexon EV Max, Tata Tiago EV, Hyundai Kona Electric, MG ZS EV, BYD Atto 3), each with battery capacity and max AC/DC charging power from publicly published manufacturer specs, and a `CCS2` connector link (all five use it). This is reference/catalog data, not a claim of field verification — `Vehicle` has no `verification_status` field the way `Station` does, because "what a manufacturer publishes about a model" is a different kind of fact than "what this app has confirmed about one physical station."
 
-**Deliberately no scooters or motorcycles**, even though `VehicleType` supports them and Nepal's EV market is arguably more two-wheeler than car: most consumer electric scooters charge from a proprietary wall-plug charger, not a `Connector` this app's stations actually offer (`CCS2`/`GB/T`/`Type 2`/`CHAdeMO`), and this project doesn't have a confident source for per-model power/connector figures for the two-wheelers actually imported into Nepal. Rather than guess — the same rule that keeps `Station.latitude` `NULL` instead of invented — that gap is left honest. Anyone using the calculator for a scooter, a motorcycle, or a car not in the five-vehicle catalog uses its manual-entry path instead (real numbers the visitor supplies for their own vehicle), which every part of the calculator supports identically to a catalog pick. See `src/components/features/ChargingCalculatorTool.tsx`.
+**Deliberately no scooters or motorcycles**, even though `VehicleType` supports them and Nepal's EV market is arguably more two-wheeler than car: most consumer electric scooters charge from a proprietary wall-plug charger, not a `Connector` this app's stations actually offer (`CCS2`/`GB/T`/`Type 2`/`CHAdeMO`), and this project doesn't have a confident source for per-model power/connector figures for the two-wheelers actually imported into Nepal. Rather than guess — the same rule that originally kept `Station.latitude` `NULL` instead of invented (§10 below covers how that specific gap was later closed, honestly) — that gap is left honest. Anyone using the calculator for a scooter, a motorcycle, or a car not in the five-vehicle catalog uses its manual-entry path instead (real numbers the visitor supplies for their own vehicle), which every part of the calculator supports identically to a catalog pick. See `src/components/features/ChargingCalculatorTool.tsx`.
+
+---
+
+## 10. Real Station Coordinate Backfill
+
+§8.2's table above records the honest original finding: **every one of the 460 stations imported with `NULL` coordinates**, because the source spreadsheet's `map_url` column is a text-search link, never a pin, and §8.5 flagged decoding a non-fabricating real coordinate as "a good candidate for a future, separately-scoped task." This section is that task, completed.
+
+### 10.1 Method — real geocoding, not guessing
+
+Two genuine, traceable methods, never a model-generated guess:
+
+- **Exact Plus Code decoding** for the ~60 station addresses that are Google Plus Codes (e.g. `XQP9+7G9, H10, Waling 33801`) — deterministic geometry, not a lookup, once the short code is anchored to the right locality (itself resolved via a real geocode of that station's `city`/`district`/`province`).
+- **OpenStreetMap Nominatim geocoding** for everything else — a real structured/free-text lookup against actual place data, restricted to Nepal, with a distance-clustering confidence check (results that are genuinely different real places, not just the same place returned at multiple administrative granularities, are treated as ambiguous and rejected rather than guessed between).
+
+For a station that couldn't be confidently geocoded on its own, a **cascade** through progressively broader real components already present in that same row was tried — the station's own name (a hotel/resort/POI often *is* independently mappable even when a bare village name isn't), then its town/city, then its district — accepting the first confident match and labeling exactly which one was used. A station only has no coordinate at all if literally nothing in its row resolves (didn't happen for this dataset — every station got at least a district-level match).
+
+### 10.2 The `CoordinateSource` field — a different axis from verification
+
+`Station.coordinate_source` (`CoordinateSource`: `EXACT | APPROXIMATE | UNKNOWN`, default `UNKNOWN`) is a **deliberately separate concept from `verification_status`/`location_verified`**. Those describe whether an `ADMIN` has confirmed a field by hand; `coordinate_source` describes how the coordinate on record was *obtained*, regardless of who (or what) obtained it. An `EXACT` coordinate from this automated geocoding pass is **not** the same claim as `location_verified = true` (which still means a human confirmed it) — the seed script never sets `location_verified`, and the map/API never conflates the two badges. See `docs/architecture.md`'s map-architecture section.
+
+- `EXACT` — the station itself was confidently geocoded.
+- `APPROXIMATE` — the coordinate is a real, named related place from the same record (never invented), not the station's own exact location. Always labeled "Approximate" everywhere it's shown — the map's amber marker, the popup's status pill, never silently presented as station-precise.
+- `UNKNOWN` — no coordinate on record; `latitude`/`longitude` stay `NULL`, exactly as every station started.
+
+### 10.3 Result, on the real dataset
+
+| `CoordinateSource` | Stations | What it means |
+|---|---|---|
+| `EXACT` | 221 (48%) | The station itself, confidently |
+| `APPROXIMATE` (named place) | 15 | The station's own hotel/resort/POI name |
+| `APPROXIMATE` (town/area) | 11 | The station's city/locality |
+| `APPROXIMATE` (district centre) | 213 | Fell back to the whole district — the honest ceiling for a station whose only location data was a village name not in OpenStreetMap's gazetteer |
+| `UNKNOWN` | 0 | — |
+
+Nearly half the "Approximate" cases (213 of 239) are district-centre fallbacks, which can be tens of kilometers from the actual station — a real limitation of the source data's precision, not hidden by this backfill, and exactly why every `APPROXIMATE` coordinate is visibly labeled rather than blended in with `EXACT` ones.
+
+### 10.4 Reproducibility
+
+`prisma/seed-data/station-coordinates.json` (a `station_id -> {latitude, longitude, source}` map, committed to the repo for the same reproducibility reason as `e-sakhi-data.xlsx` itself) plus `prisma/seed-coordinates.ts` (called from `prisma/seed.ts`'s `main()`, and independently runnable) — so any fresh `npm run db:seed`, on any environment, reproduces the exact same coordinate coverage without re-running the geocoding pass itself. Matching stations by `station_id` (never inventing one), it can only update a station that already exists.

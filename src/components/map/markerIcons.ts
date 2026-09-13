@@ -12,22 +12,40 @@ const ZAP_PATH =
   "M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z";
 
 const EMERALD = "#059669";
+const AMBER = "#d97706";
 const BLUE = "#2563eb";
 
 let stationIcon: L.DivIcon | null = null;
+let approximateStationIcon: L.DivIcon | null = null;
 
-/** The standard station marker — one shared instance, since it never varies. */
-export function getStationIcon(): L.DivIcon {
-  stationIcon ??= L.divIcon({
-    className: "e-sakhi-marker",
-    html: `<div style="width:30px;height:30px;border-radius:9999px;background:${EMERALD};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;">
+function buildStationIcon(color: string, className: string): L.DivIcon {
+  return L.divIcon({
+    className,
+    html: `<div style="width:30px;height:30px;border-radius:9999px;background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="${ZAP_PATH}"/></svg>
     </div>`,
     iconSize: [30, 30],
     iconAnchor: [15, 15],
     popupAnchor: [0, -15],
   });
+}
+
+/** The standard (exact-coordinate) station marker — emerald, matching the brand mark. One shared instance, since it never varies. */
+export function getStationIcon(): L.DivIcon {
+  stationIcon ??= buildStationIcon(EMERALD, "e-sakhi-marker");
   return stationIcon;
+}
+
+/**
+ * A station whose coordinate is `APPROXIMATE` (a related place's location
+ * stood in for the station's own — see docs/data-model.md §10) gets the
+ * same shape but a distinct amber color, matching this app's existing
+ * "assumed/needs attention" convention (VerificationBadge's ASSUMED
+ * style) rather than inventing a new color meaning.
+ */
+export function getApproximateStationIcon(): L.DivIcon {
+  approximateStationIcon ??= buildStationIcon(AMBER, "e-sakhi-marker-approximate");
+  return approximateStationIcon;
 }
 
 let userIcon: L.DivIcon | null = null;

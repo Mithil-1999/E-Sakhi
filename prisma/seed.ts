@@ -46,6 +46,7 @@ import {
   num,
 } from "../src/services/excel-station-parser";
 import { seedVehicles } from "./seed-vehicles";
+import { seedCoordinates } from "./seed-coordinates";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -156,8 +157,12 @@ async function main() {
       city: strOrDefault(first.city, "Unknown"),
       address: strOrDefault(first.address, "Unknown"),
       contact: pickContact(first),
-      // No station in this dataset has usable coordinates (map_url is a
-      // text-search link, never a pin) — see docs/data-model.md addendum.
+      // The source spreadsheet itself has no usable coordinates
+      // (map_url is a text-search link, never a pin — see
+      // docs/data-model.md §8.5) — so a brand-new station still starts
+      // with none here. Real coordinates are filled in afterward by
+      // seedCoordinates() below, which matches by station_id once every
+      // station above already exists.
       latitude: null,
       longitude: null,
       mapUrl: str(first.map_url),
@@ -255,6 +260,16 @@ async function main() {
       }
     }
   }
+
+  // Real coordinate backfill (see prisma/seed-coordinates.ts) — runs
+  // after every station above already exists, since it matches by
+  // station_id and updates in place. Never overwrites the station
+  // structural fields above; only latitude/longitude/coordinateSource.
+  console.log("\nBackfilling real station coordinates...");
+  const coordResult = await seedCoordinates(prisma);
+  console.log(
+    `  ${coordResult.updated} stations updated (${coordResult.exact} exact, ${coordResult.approximate} approximate).`
+  );
 
   // ---------------------------------------------------------------------
   // Summary report

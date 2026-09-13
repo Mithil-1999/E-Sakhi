@@ -42,6 +42,26 @@ enum StationStatus {
   @@map("station_status")
 }
 
+/**
+ * How a station's latitude/longitude was obtained — a genuinely different
+ * axis from VerificationStatus/locationVerified below, which describe
+ * whether an ADMIN has confirmed a field, not how a coordinate was
+ * computed. EXACT = geocoded to the station itself. APPROXIMATE =
+ * geocoded to a real, named related place from the same record (the
+ * station's own name/POI, its town, or its district) because the station
+ * itself couldn't be confidently located — still a real, traceable
+ * coordinate, never invented, just lower precision. UNKNOWN (default) =
+ * no coordinate on record, same as latitude/longitude being NULL. See
+ * docs/data-model.md §10.
+ */
+enum CoordinateSource {
+  EXACT
+  APPROXIMATE
+  UNKNOWN
+
+  @@map("coordinate_source")
+}
+
 enum ChargerAvailability {
   AVAILABLE
   BUSY
@@ -178,9 +198,10 @@ model Station {
   address  String
   contact  String?
 
-  latitude  Decimal? @db.Decimal(9, 6)
-  longitude Decimal? @db.Decimal(9, 6)
-  mapUrl    String?  @map("map_url")
+  latitude         Decimal?         @db.Decimal(9, 6)
+  longitude        Decimal?         @db.Decimal(9, 6)
+  coordinateSource CoordinateSource @default(UNKNOWN) @map("coordinate_source")
+  mapUrl           String?          @map("map_url")
 
   status StationStatus @default(UNKNOWN)
 
