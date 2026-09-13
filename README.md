@@ -116,7 +116,7 @@ All station data is served from the database through these endpoints — nothing
 | Endpoint | Auth | Notes |
 |---|---|---|
 | `GET /api/stations` | Public | Paginated (`page`, `pageSize`, max 100), filterable by `search`, `province`, `district`, `city`, `operatorId`, `status`, `verificationStatus`, `connector`, `chargingMode`, `powerBucket`, `vehicleType`, `availability` (the last three added in Part 06). Excludes soft-deleted stations unless the caller is an authenticated `ADMIN` and passes `includeDeleted=true` (silently ignored otherwise). |
-| `GET /api/stations/[id]` | Public | `[id]` is the internal `Station.id`, not the source `station_id` (e.g. `EVNP-0001`). Includes full chargers/connectors and a `rating` computed live from `Review` rows (always `{ average: null, count: 0 }` until Part 15 adds reviews). |
+| `GET /api/stations/[id]` | Public | `[id]` is the internal `Station.id`, not the source `station_id` (e.g. `EVNP-0001`). Includes full chargers/connectors and a `rating` computed live from real `Review` rows (Part 15). |
 | `POST /api/stations` | `ADMIN` | Creates a station. Coordinates are never invented — omit `latitude`/`longitude` rather than guessing. |
 | `PUT /api/stations/[id]` | `ADMIN` | Partial update (send only the fields you're changing). Any verification-field change is written to `VerificationLog` automatically, in the same transaction. |
 | `DELETE /api/stations/[id]` | `ADMIN` | Soft delete only (`is_deleted`/`deleted_at`/`deleted_by`) — also soft-deletes that station's chargers. Returns the updated (now-deleted) station rather than `204`. |
@@ -132,6 +132,11 @@ All station data is served from the database through these endpoints — nothing
 | `DELETE /api/favorites/[stationId]` | Signed-in | Unfavorites a station. Idempotent — succeeds even if it wasn't favorited. `userId` always comes from the session, never from client input (`docs/architecture.md §3`). |
 | `POST /api/import/preview` | `ADMIN` | Multipart upload (`file`, an `.xlsx`). Read-only — parses and diffs against the live database, writes nothing. See [docs/data-import.md](docs/data-import.md). |
 | `POST /api/import/apply` | `ADMIN` | JSON body of admin-approved entries (as returned by the preview call). Writes only via the existing station/charger mutation functions — never a station's verification fields, coordinates, or a charger's availability. |
+| `GET /api/stations/[id]/reviews` | Public | Lists a station's reviews, most-recently-updated first. |
+| `POST /api/stations/[id]/reviews` | Signed-in | Body `{ rating, comment }`. Upsert — creates or updates the caller's own review for this station (one per user per station). |
+| `DELETE /api/stations/[id]/reviews` | Signed-in | Deletes the caller's own review for this station. Idempotent. |
+| `POST /api/stations/[id]/reports` | Signed-in | Body `{ reportType, description? }`. Creates a "Report Incorrect Information" submission for admin triage. |
+| `PATCH /api/reports/[id]` | `ADMIN` | Body `{ status }`. Moves a report between `PENDING`/`REVIEWING`/`RESOLVED`/`REJECTED`; used by the `/admin/reports` triage queue. |
 
 ### Testing the API
 
@@ -159,7 +164,7 @@ Try it: [`/stations?province=Bagmati`](http://localhost:3000/stations?province=B
 
 ### Station Details
 
-`/stations/[id]` (linked from every station card, map popup, and search result) shows a station's full record: address/province/district/city, an embedded single-station map (only rendered when real coordinates exist — "Location unavailable" otherwise, never a guessed pin), every charger with connector(s)/mode/power/availability, contact, status, live-computed rating, and the full verification picture (status, source, last-verified date, per-field verified checklist). Navigate/Call only appear when real coordinates/contact exist; Favorite and Report Incorrect Information are honestly inert stubs (disabled with an explanatory tooltip) until Parts 10/15 build them for real.
+`/stations/[id]` (linked from every station card, map popup, and search result) shows a station's full record: address/province/district/city, an embedded single-station map (only rendered when real coordinates exist — "Location unavailable" otherwise, never a guessed pin), every charger with connector(s)/mode/power/availability, contact, status, live-computed rating, the full verification picture (status, source, last-verified date, per-field verified checklist), and — since Part 15 — real reviews and a real report flow. Navigate/Call only appear when real coordinates/contact exist; Favorite (Part 10), leaving a review, and Report Incorrect Information (both Part 15) are all real, session-backed actions.
 
 ### Charging Calculator
 
@@ -194,7 +199,7 @@ Real per-user favorites (Part 10) — the `Favorite` model has existed since Par
 
 `/admin` (`ADMIN`-only, real-server-checked via `requireAdmin()` regardless of what `src/proxy.ts` already redirected) replaces the old "coming soon" stub with a real overview, computed fresh from the database on every request — nothing cached, nothing hard-coded:
 
-- **Counts**: stations, chargers, operators, connectors, users (and how many are admins), favorites, reviews, and reports (the last two are genuinely `0` today — Reviews/Reports are Part 15 — and the dashboard says so plainly rather than omitting the row).
+- **Counts**: stations, chargers, operators, connectors, users (and how many are admins), favorites, reviews, and reports. Reviews/reports were genuinely `0` before Part 15 built the features that create them — the "Reports" card now also links to `/admin/reports`, the triage queue.
 - **Station status breakdown**, confirmed-coordinate count, and soft-deleted station/charger counts.
 - **Verification status distribution** — all six `VerificationStatus` values shown even at `0`, a status nobody currently has is real information, not a gap to hide.
 - **Recent verification activity** — the last 15 `VerificationLog` rows (every verification-field change `PUT /api/stations/[id]` makes has been logged automatically since Part 04; this is the first page that actually shows that log). Read-only: this page reports, it never mutates. Managing stations through a UI is Part 12; a full verification-approval workflow (bulk actions on `NEEDS_REVIEW` stations, etc.) is Part 13 — kept deliberately out of scope here.
@@ -228,6 +233,15 @@ Real per-user favorites (Part 10) — the `Favorite` model has existed since Par
 - **A soft-deleted station reappearing in a new upload is skipped, never revived** — same for a charger whose plug id now belongs to a different station. Both are surfaced with a clear reason in the review UI, not silently dropped.
 - **A genuinely new station gets the same honest verification classification** `prisma/seed.ts` gives every row on first import (`VERIFIED`/`NEEDS_REVIEW`/`ASSUMED`, never a default "trusted" status) — there's no existing admin decision to protect for a record that didn't exist before.
 
+### Reviews & Reports
+
+Part 15 gives real content to the two things the station detail page (Part 07) had shown, since launch, as honest stubs — a `rating` field the API always computed but nothing ever wrote, and a disabled "Report Incorrect Information" button:
+
+- **Reviews** — a signed-in user leaves a 1-5 star rating plus an optional comment (`ReviewSection.tsx`); one review per user per station (`Review.@@unique([userId, stationId])`, existed since Part 02), always editable — resubmitting updates the same row via `POST /api/stations/[id]/reviews`' upsert rather than creating a second one. `DELETE /api/stations/[id]/reviews` removes it. A station's average rating and review count were already computed fresh from `Review` rows at query time since Part 04 (`getStationRating()`) — this part is what finally puts real rows there to compute from, not a change to how the number is computed.
+- **Reports** — a signed-in user picks an issue type (`ReportType`, existed since Part 02) and an optional description; `POST /api/stations/[id]/reports` creates the row (`Report`, status `PENDING`). Unlike Favorite/Review there's no `[userId, stationId]` uniqueness — different problems on the same station are different reports.
+- **`/admin/reports`** (Part 15) is the triage queue that finally populates `/admin`'s "Reports"/"Pending reports" stat cards for real — tabbed by `ReportStatus` (`PENDING` the default), oldest-first (clearing the backlog, not browsing it). Unlike `/admin/verification`, which only reviews inline and links out to Part 12's edit form, this queue's one mutation (`PENDING` → `REVIEWING`/`RESOLVED`/`REJECTED`) happens right here via `PATCH /api/reports/[id]`.
+- **Ownership is structural, not just checked** — `review-service.ts`/`report-service.ts` take `userId` as a caller-derived parameter exactly like `favorite-service.ts` (Part 10); a client can never submit a `userId` for any of these endpoints.
+
 ## Development Roadmap
 
 Built incrementally, in the order below. Each part is tested, committed, and left in a runnable state before the next begins.
@@ -247,7 +261,7 @@ Built incrementally, in the order below. Each part is tested, committed, and lef
 - [x] **Part 12** — Admin station management *(`/admin/stations`, `/admin/stations/new`, `/admin/stations/[id]/edit` — create/edit/soft-delete stations and their chargers/connectors through a real UI, built on Part 04's station API plus new `POST /api/chargers` / `PUT`&`DELETE /api/chargers/[id]`; coordinates stay honest — never defaulted or fabricated by the form)*
 - [x] **Part 13** — Data verification dashboard *(`/admin/verification` — a queue of NEEDS_REVIEW/ASSUMED/UNVERIFIED stations with the full checklist rendered inline, linking to Part 12's existing edit form rather than a second one; a station's complete VerificationLog history, not just the dashboard's last-15 feed)*
 - [x] **Part 14** — Excel import/update tool *(`/admin/import` — upload, diff against the live database, review, approve; reuses `createStation`/`updateStation`/`createCharger`/`updateCharger` for every write, adds none; structurally can never touch verification fields, coordinates, or charger availability on an existing record — see `docs/data-import.md`)*
-- [ ] Part 15 — Reviews + reports
+- [x] **Part 15** — Reviews + reports *(real 1-5 star reviews with comments, `POST`/`DELETE /api/stations/[id]/reviews`, one editable review per user per station; a real "Report Incorrect Information" flow, `POST /api/stations/[id]/reports`; `/admin/reports` triage queue, `PATCH /api/reports/[id]` — finally populates `/admin`'s Reviews/Reports stat cards for real)*
 - [ ] Part 16 — Final testing, security review, polish
 
 ## Future Features (not yet implemented, by design)

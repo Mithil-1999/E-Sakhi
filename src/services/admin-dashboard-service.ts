@@ -1,5 +1,5 @@
 import "server-only";
-import { Prisma, VerificationStatus } from "@prisma/client";
+import { Prisma, ReportStatus, VerificationStatus } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 
 /**
@@ -16,6 +16,7 @@ import { prisma } from "@/lib/db/prisma";
 
 export type StationStatusCounts = { status: "ACTIVE" | "INACTIVE" | "UNKNOWN"; count: number };
 export type VerificationStatusCounts = { status: VerificationStatus; count: number };
+export type ReportStatusCounts = { status: ReportStatus; count: number };
 
 export type AdminDashboardStats = {
   stations: {
@@ -43,6 +44,8 @@ export type AdminDashboardStats = {
     pending: number;
   };
   verificationDistribution: VerificationStatusCounts[];
+  /** Every ReportStatus, even at 0 — used by /admin/reports' tab counts (Part 15), same "absent is real information" rule as verificationDistribution. */
+  reportStatusDistribution: ReportStatusCounts[];
 };
 
 const ALL_STATION_STATUSES = ["ACTIVE", "INACTIVE", "UNKNOWN"] as const;
@@ -64,6 +67,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     reportTotal,
     reportPending,
     verificationGroups,
+    reportStatusGroups,
   ] = await Promise.all([
     prisma.station.count({ where: { isDeleted: false } }),
     prisma.station.groupBy({ by: ["status"], where: { isDeleted: false }, _count: true }),
@@ -82,6 +86,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     prisma.report.count(),
     prisma.report.count({ where: { status: "PENDING" } }),
     prisma.station.groupBy({ by: ["verificationStatus"], where: { isDeleted: false }, _count: true }),
+    prisma.report.groupBy({ by: ["status"], _count: true }),
   ]);
 
   // Every enum value is represented even at 0 — a status nobody currently
@@ -98,6 +103,11 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     })
   );
 
+  const reportStatusDistribution: ReportStatusCounts[] = Object.values(ReportStatus).map((status) => ({
+    status,
+    count: reportStatusGroups.find((g) => g.status === status)?._count ?? 0,
+  }));
+
   return {
     stations: {
       total: stationTotal,
@@ -113,6 +123,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     reviews: reviewCount,
     reports: { total: reportTotal, pending: reportPending },
     verificationDistribution,
+    reportStatusDistribution,
   };
 }
 

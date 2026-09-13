@@ -62,7 +62,7 @@ export default async function AdminPage() {
     { label: "Users", value: stats.users.total, icon: UsersIcon },
     { label: "Favorites", value: stats.favorites, icon: Heart },
     { label: "Reviews", value: stats.reviews, icon: Star },
-    { label: "Reports", value: stats.reports.total, icon: Flag },
+    { label: "Reports", value: stats.reports.total, icon: Flag, href: "/admin/reports" },
   ];
 
   const maxVerificationCount = Math.max(1, ...stats.verificationDistribution.map((v) => v.count));
@@ -96,6 +96,18 @@ export default async function AdminPage() {
           >
             <ShieldCheck className="h-4 w-4" aria-hidden="true" />
             Verification Queue
+          </Link>
+          <Link
+            href="/admin/reports"
+            className="inline-flex items-center gap-2 rounded-lg border border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
+          >
+            <Flag className="h-4 w-4" aria-hidden="true" />
+            Reports
+            {stats.reports.pending > 0 && (
+              <span className="rounded-full bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                {stats.reports.pending}
+              </span>
+            )}
           </Link>
           <Link
             href="/admin/stations"

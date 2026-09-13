@@ -4,7 +4,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
-  Flag,
   Info,
   MapPin,
   Navigation,
@@ -17,11 +16,15 @@ import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { VerificationBadge } from "@/components/ui/VerificationBadge";
 import { VerificationChecklist } from "@/components/ui/VerificationChecklist";
+import { StarRating } from "@/components/ui/StarRating";
 import { StationLocationMap } from "@/components/features/StationLocationMap";
 import { FavoriteButton } from "@/components/features/FavoriteButton";
+import { ReviewSection } from "@/components/features/ReviewSection";
+import { ReportButton } from "@/components/features/ReportButton";
 import { getStationById, type StationDetail } from "@/services/station-service";
 import { getOptionalUser } from "@/lib/auth/session";
 import { isFavorited } from "@/services/favorite-service";
+import { listReviewsForStation, getOwnReview } from "@/services/review-service";
 
 const STATUS_STYLES: Record<StationDetail["status"], string> = {
   ACTIVE: "text-emerald-700 dark:text-emerald-400",
@@ -96,7 +99,11 @@ export default async function StationDetailPage({ params }: PageProps<"/stations
   }
 
   const user = await getOptionalUser();
-  const favorited = user ? await isFavorited(user.id, station.id) : false;
+  const [favorited, reviews, ownReview] = await Promise.all([
+    user ? isFavorited(user.id, station.id) : Promise.resolve(false),
+    listReviewsForStation(station.id),
+    user ? getOwnReview(user.id, station.id) : Promise.resolve(null),
+  ]);
 
   const hasCoordinates = station.latitude !== null && station.longitude !== null;
   const navigateHref = hasCoordinates
@@ -314,15 +321,7 @@ export default async function StationDetailPage({ params }: PageProps<"/stations
 
               <FavoriteButton stationId={station.id} initialFavorited={favorited} isLoggedIn={user !== null} />
 
-              <Button
-                type="button"
-                variant="outline"
-                disabled
-                title="Reporting incorrect information is coming in a later update"
-              >
-                <Flag className="h-4 w-4" aria-hidden="true" />
-                Report Incorrect Information
-              </Button>
+              <ReportButton stationId={station.id} isLoggedIn={user !== null} />
             </div>
           </section>
 
@@ -361,19 +360,31 @@ export default async function StationDetailPage({ params }: PageProps<"/stations
               Rating
             </h2>
             {station.rating.count > 0 && station.rating.average !== null ? (
-              <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  {station.rating.average.toFixed(1)}
-                </span>{" "}
-                / 5 · {station.rating.count} review{station.rating.count === 1 ? "" : "s"}
-              </p>
+              <div className="mt-2">
+                <StarRating value={station.rating.average} />
+                <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">
+                  <span className="font-semibold text-slate-900 dark:text-white">
+                    {station.rating.average.toFixed(1)}
+                  </span>{" "}
+                  / 5 · {station.rating.count} review{station.rating.count === 1 ? "" : "s"}
+                </p>
+              </div>
             ) : (
               <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                No reviews yet — reviews arrive in a later part of the build.
+                No reviews yet — be the first to leave one below.
               </p>
             )}
           </section>
         </div>
+      </div>
+
+      <div className="mt-6">
+        <ReviewSection
+          stationId={station.id}
+          initialReviews={reviews}
+          initialOwnReview={ownReview}
+          isLoggedIn={user !== null}
+        />
       </div>
     </Container>
   );
