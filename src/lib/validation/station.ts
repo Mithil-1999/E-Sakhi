@@ -61,7 +61,17 @@ export const StationCreateSchema = z.object({
   // NULL. See docs/architecture.md §6 and docs/data-model.md.
   latitude: latitudeSchema,
   longitude: longitudeSchema,
-  mapUrl: z.url().max(2000).nullable().optional(),
+  // Intentionally lenient (no z.url()) — matches src/lib/validation/
+  // import.ts's mapUrl and docs/data-model.md §4's own definition of the
+  // field ("raw source URL/description," never guaranteed to be a valid
+  // URL). This used to be z.url() here specifically, a stricter rule for
+  // a human typing a fresh value; Part 16 removed that split after it
+  // turned into a real bug: EVNP-0448's legacy mapUrl value ("Listed", a
+  // garbled source row — see docs/data-model.md §8.4) failed z.url() on
+  // every full-state resend from AdminStationForm.tsx, permanently
+  // blocking that station's admin edit form from saving *any* field, not
+  // just mapUrl. See docs/architecture.md §4.
+  mapUrl: z.string().trim().max(2000).nullable().optional(),
   status: z.enum(STATION_STATUS_VALUES).default("UNKNOWN"),
   verificationStatus: z.enum(VERIFICATION_STATUS_VALUES).default("UNKNOWN"),
   assumptionFlag: z.boolean().default(false),
@@ -86,7 +96,9 @@ export const StationUpdateSchema = z
     contact: z.string().trim().max(100).nullable(),
     latitude: latitudeSchema,
     longitude: longitudeSchema,
-    mapUrl: z.url().max(2000).nullable(),
+    // See StationCreateSchema's mapUrl comment above — intentionally not
+    // z.url(), fixed in Part 16.
+    mapUrl: z.string().trim().max(2000).nullable(),
     status: z.enum(STATION_STATUS_VALUES),
     verificationStatus: z.enum(VERIFICATION_STATUS_VALUES),
     assumptionFlag: z.boolean(),

@@ -22,8 +22,11 @@ const VERIFICATION_STATUS_VALUES = [
 const CHARGING_MODE_VALUES = ["AC", "DC", "UNKNOWN"] as const;
 
 // mapUrl is intentionally lenient (no z.url()) — matches prisma/seed.ts's
-// original leniency toward this column, not the admin manual-edit form's
-// stricter validation. See docs/data-import.md §4.
+// original leniency toward this column. station.ts's admin manual-edit
+// schemas used to be stricter here (z.url()); Part 16 aligned them with
+// this same leniency after that split blocked EVNP-0448's admin edit form
+// entirely (docs/data-model.md §8.4's garbled mapUrl value). See
+// docs/data-import.md §4.
 const ImportStationDataSchema = z.object({
   stationName: z.string().trim().min(1).max(200),
   operatorName: z.string().trim().min(1).max(200).nullable(),

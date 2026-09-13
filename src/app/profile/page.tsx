@@ -61,7 +61,8 @@ export default async function ProfilePage() {
           <Link href="/my-favorites" className="font-medium text-emerald-600 hover:underline dark:text-emerald-400">
             My Favorites
           </Link>{" "}
-          is live — reviews and editing your profile arrive in a later part of the build.
+          is live, and reviews are too — leave one from any station&apos;s detail page. Editing
+          your profile isn&apos;t built yet.
         </p>
 
         <div className="mt-6 border-t border-slate-200 pt-6 dark:border-slate-800">

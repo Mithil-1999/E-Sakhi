@@ -4,7 +4,7 @@
 
 E Sakhi is a smart Electric Vehicle (EV) charging-station discovery and recommendation platform focused primarily on Nepal. It helps EV drivers find charging stations, understand which chargers actually fit their vehicle, estimate charging time, and get station recommendations that account for compatibility, distance, power, availability, rating, and how well-verified the station's data actually is.
 
-> **Status:** early development (through Part 14 — Excel import/update tool). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle/favorites API, an interactive Nepal map, a full search/filter station list, station detail pages, a charging calculator, multi-factor station recommendations, real per-user favorites (`/dashboard`, `/my-favorites`), a live admin overview (`/admin`), real admin station/charger management (`/admin/stations`), a dedicated verification workflow (`/admin/verification`), and a diff/approve Excel re-import tool (`/admin/import`) are live; reviews are not built yet. See [Development Roadmap](#development-roadmap) for what's actually implemented today.
+> **Status:** feature-complete through Part 16 (final testing, security review, polish — the last planned part). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle/favorites API, an interactive Nepal map, a full search/filter station list, station detail pages, a charging calculator, multi-factor station recommendations, real per-user favorites (`/dashboard`, `/my-favorites`), a live admin overview (`/admin`), real admin station/charger management (`/admin/stations`), a dedicated verification workflow (`/admin/verification`), a diff/approve Excel re-import tool (`/admin/import`), real reviews and a report-triage queue (`/admin/reports`) are all live. See [Development Roadmap](#development-roadmap) for the full build history.
 
 ---
 
@@ -75,7 +75,7 @@ npm run db:seed
 npm run dev
 ```
 
-`npm run dev` currently serves the home page, a working `/map`, `/stations` (search/filters), `/stations/[id]` (station details), `/charging-calculator`, `/recommendations`, `/dashboard`, `/my-favorites`, plus `/login`, `/register`, `/profile`, a real `/admin` overview dashboard, admin station/charger management at `/admin/stations`, a verification workflow at `/admin/verification`, and an Excel re-import tool at `/admin/import`. Reviews aren't built yet.
+`npm run dev` serves the home page, a working `/map`, `/stations` (search/filters), `/stations/[id]` (station details, real reviews, and a report flow), `/charging-calculator`, `/recommendations`, `/dashboard`, `/my-favorites`, plus `/login`, `/register`, `/profile`, a real `/admin` overview dashboard, admin station/charger management at `/admin/stations`, a verification workflow at `/admin/verification`, an Excel re-import tool at `/admin/import`, and a report-triage queue at `/admin/reports`.
 
 ### Environment Variables
 
@@ -262,7 +262,7 @@ Built incrementally, in the order below. Each part is tested, committed, and lef
 - [x] **Part 13** — Data verification dashboard *(`/admin/verification` — a queue of NEEDS_REVIEW/ASSUMED/UNVERIFIED stations with the full checklist rendered inline, linking to Part 12's existing edit form rather than a second one; a station's complete VerificationLog history, not just the dashboard's last-15 feed)*
 - [x] **Part 14** — Excel import/update tool *(`/admin/import` — upload, diff against the live database, review, approve; reuses `createStation`/`updateStation`/`createCharger`/`updateCharger` for every write, adds none; structurally can never touch verification fields, coordinates, or charger availability on an existing record — see `docs/data-import.md`)*
 - [x] **Part 15** — Reviews + reports *(real 1-5 star reviews with comments, `POST`/`DELETE /api/stations/[id]/reviews`, one editable review per user per station; a real "Report Incorrect Information" flow, `POST /api/stations/[id]/reports`; `/admin/reports` triage queue, `PATCH /api/reports/[id]` — finally populates `/admin`'s Reviews/Reports stat cards for real)*
-- [ ] Part 16 — Final testing, security review, polish
+- [x] **Part 16** — Final testing, security review, polish *(full end-to-end pass as visitor/user/admin; `docs/architecture.md §10`'s security conventions verified line-by-line against the real implementation, not just restated; fixed a real bug where `Station.mapUrl`'s stricter admin-form validation (`z.url()`) permanently blocked saving any field on a station whose legacy `mapUrl` was already non-URL text — both validation schemas now match `docs/data-model.md`'s own lenient definition of the field; removed unused `create-next-app` boilerplate assets; corrected stale "reviews arrive in a later part" copy on `/profile`)*
 
 ## Future Features (not yet implemented, by design)
 
@@ -276,7 +276,7 @@ Real-time charger availability, operator APIs, payment/booking, charging-session
 - No secrets are committed; all configuration is environment-variable driven.
 - Prisma is used for all database access — no hand-built SQL string concatenation with user input.
 
-Full checklist (applied progressively, finalized in Part 16): see [docs/architecture.md](docs/architecture.md).
+Full checklist, verified line-by-line against the actual implementation in Part 16 (not just restated): see [docs/architecture.md §10](docs/architecture.md).
 
 ---
 

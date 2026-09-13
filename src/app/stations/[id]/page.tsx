@@ -69,6 +69,26 @@ const AVAILABILITY_STYLES: Record<ChargerRow["availability"], string> = {
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", { dateStyle: "medium" });
 
+/**
+ * `Station.mapUrl` is validated leniently (Part 16, `src/lib/validation/
+ * station.ts`) — it's documented as "raw source URL/description," not
+ * guaranteed to be an actual link (e.g. `EVNP-0448`'s legacy value is the
+ * literal string `"Listed"`, `docs/data-model.md §8.4`). Rendering that as
+ * a clickable `<a href="Listed">` would be a broken, confusing link, not
+ * a "somewhat working" one — so this only renders an anchor for a value
+ * that's actually `http(s)`, and shows anything else as plain text
+ * instead, same "don't imply more than the data supports" rule as every
+ * other honesty check on this page.
+ */
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 // Public page — never shows a soft-deleted station, regardless of who's
 // viewing (matches /stations' list page rule; see src/services/
 // station-service.ts). Wrapped in React's cache() so generateMetadata and
@@ -193,14 +213,20 @@ export default async function StationDetailPage({ params }: PageProps<"/stations
                 <div>
                   <dt className="text-xs text-slate-500 dark:text-slate-400">Source map link</dt>
                   <dd>
-                    <a
-                      href={station.mapUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium text-emerald-600 hover:underline dark:text-emerald-400"
-                    >
-                      Open (search link, not a pin)
-                    </a>
+                    {isHttpUrl(station.mapUrl) ? (
+                      <a
+                        href={station.mapUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+                      >
+                        Open (search link, not a pin)
+                      </a>
+                    ) : (
+                      <span className="font-medium text-slate-900 dark:text-white" title="Not a usable link — recorded as-is from the source data.">
+                        {station.mapUrl}
+                      </span>
+                    )}
                   </dd>
                 </div>
               )}
