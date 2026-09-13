@@ -4,8 +4,8 @@ import { useCallback, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Award, Battery, Gauge, Locate, MapPin, Star, Zap } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { VerificationBadge } from "@/components/ui/VerificationBadge";
-import { CANONICAL_CONNECTORS } from "@/services/connector-service";
+import { PublicVerificationBadge } from "@/components/ui/PublicVerificationBadge";
+import { SELECTABLE_CONNECTORS } from "@/services/connector-service";
 import type { VehicleListItem } from "@/types/vehicle";
 import type {
   RecommendationApiResponse,
@@ -18,7 +18,6 @@ const inputClass =
   "mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900";
 
 const CUSTOM_VEHICLE_ID = "__custom__";
-const SELECTABLE_CONNECTORS = CANONICAL_CONNECTORS.filter((c) => c.code !== "UNKNOWN");
 
 type GeoStatus = "idle" | "locating" | "denied" | "unsupported";
 
@@ -300,7 +299,7 @@ function RecommendationResultCard({ rank, station }: { rank: number; station: Re
           <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
             {formatPercent(station.score)}
           </p>
-          <VerificationBadge status={station.verificationStatus} />
+          <PublicVerificationBadge status={station.verificationStatus} />
         </div>
       </div>
 

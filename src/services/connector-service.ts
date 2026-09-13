@@ -53,6 +53,23 @@ export const CANONICAL_CONNECTORS: CanonicalConnectorSeed[] = [
   },
 ];
 
+/**
+ * Connector options offered to a visitor picking a filter/preference —
+ * never the canonical set an admin/import path needs to *recognize*
+ * (CANONICAL_CONNECTORS itself, used unfiltered by buildAliasLookup()
+ * above). "Unknown" isn't a meaningful filter choice (nobody wants to
+ * search for "a charger of an unknown type"). CHAdeMO is excluded from
+ * every user-facing picker because zero chargers in the current seeded
+ * dataset use it (see docs/data-model.md §8.2's connector usage counts)
+ * — this hides an always-empty option, not real data; the alias
+ * recognition above is untouched, so a genuinely CHAdeMO-equipped
+ * station added later still imports/normalizes correctly even though no
+ * picker currently offers it as a choice.
+ */
+export const SELECTABLE_CONNECTORS = CANONICAL_CONNECTORS.filter(
+  (c) => c.code !== "UNKNOWN" && c.code !== "CHADEMO"
+);
+
 function normalizeAliasText(raw: string): string {
   return raw.trim().toLowerCase().replace(/\s+/g, " ");
 }

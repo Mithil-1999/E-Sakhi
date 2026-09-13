@@ -6,7 +6,12 @@ import { POWER_BUCKET_IDS } from "@/lib/config/power-buckets";
 // (rather than deriving from the Prisma-generated enum object) so this
 // file has no runtime dependency on @prisma/client — just the same
 // values, which schema.prisma is the source of truth for.
-const STATION_STATUS_VALUES = ["ACTIVE", "INACTIVE", "UNKNOWN"] as const;
+// Simplified to two values by product decision — StationStatus.UNKNOWN
+// still exists in prisma/schema.prisma (so no data/enum migration is
+// forced), but the app no longer sets, filters by, or displays it; every
+// station is ACTIVE unless explicitly INACTIVE. See mapStationStatus()
+// in src/services/excel-station-parser.ts.
+const STATION_STATUS_VALUES = ["ACTIVE", "INACTIVE"] as const;
 const VERIFICATION_STATUS_VALUES = [
   "VERIFIED",
   "PARTIALLY_VERIFIED",
@@ -72,7 +77,7 @@ export const StationCreateSchema = z.object({
   // blocking that station's admin edit form from saving *any* field, not
   // just mapUrl. See docs/architecture.md §4.
   mapUrl: z.string().trim().max(2000).nullable().optional(),
-  status: z.enum(STATION_STATUS_VALUES).default("UNKNOWN"),
+  status: z.enum(STATION_STATUS_VALUES).default("ACTIVE"),
   verificationStatus: z.enum(VERIFICATION_STATUS_VALUES).default("UNKNOWN"),
   assumptionFlag: z.boolean().default(false),
   verificationSource: z.string().trim().max(500).nullable().optional(),

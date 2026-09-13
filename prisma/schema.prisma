@@ -203,7 +203,11 @@ model Station {
   coordinateSource CoordinateSource @default(UNKNOWN) @map("coordinate_source")
   mapUrl           String?          @map("map_url")
 
-  status StationStatus @default(UNKNOWN)
+  // Defaults to ACTIVE by product decision — every station is presumed
+  // active unless explicitly marked otherwise. UNKNOWN remains a valid
+  // enum value (so this isn't a breaking migration for any row that
+  // already has it) but nothing in the app sets or displays it anymore.
+  status StationStatus @default(ACTIVE)
 
   // -- verification --
   verificationStatus   VerificationStatus @default(UNKNOWN) @map("verification_status")

@@ -58,6 +58,21 @@ export type StationRating = { average: number | null; count: number };
 // password hashes, no VerificationLog rows) is ever included here.
 // ---------------------------------------------------------------------------
 
+/**
+ * Station status is a simplified, two-value concept by product decision
+ * (every station is ACTIVE unless explicitly INACTIVE) — see
+ * src/lib/validation/station.ts and src/services/excel-station-parser.ts's
+ * mapStationStatus(). `StationStatus.UNKNOWN` still exists in the Prisma
+ * enum (so this wasn't a breaking schema migration) and every known row
+ * was bulk-updated off it, but this normalizes any legacy/edge-case
+ * UNKNOWN row defensively at the read layer too, rather than relying
+ * solely on the one-time data fix — a real structural guarantee, not
+ * just a point-in-time cleanup.
+ */
+function normalizeStationStatus(status: "ACTIVE" | "INACTIVE" | "UNKNOWN"): "ACTIVE" | "INACTIVE" {
+  return status === "INACTIVE" ? "INACTIVE" : "ACTIVE";
+}
+
 function summarizeChargers(chargers: StationListRow["chargers"] | StationDetailRow["chargers"]) {
   const connectorByCode = new Map<string, string>();
   const chargingModes = new Set<string>();
@@ -96,7 +111,7 @@ export function toStationListItem(station: StationListRow) {
     longitude: decimalToNumber(station.longitude),
     coordinateSource: station.coordinateSource,
     mapUrl: station.mapUrl,
-    status: station.status,
+    status: normalizeStationStatus(station.status),
     verificationStatus: station.verificationStatus,
     assumptionFlag: station.assumptionFlag,
     chargerSummary: summarizeChargers(station.chargers),
@@ -121,7 +136,7 @@ export function toStationDetail(station: StationDetailRow, rating: StationRating
     longitude: decimalToNumber(station.longitude),
     coordinateSource: station.coordinateSource,
     mapUrl: station.mapUrl,
-    status: station.status,
+    status: normalizeStationStatus(station.status),
     verificationStatus: station.verificationStatus,
     assumptionFlag: station.assumptionFlag,
     verificationSource: station.verificationSource,

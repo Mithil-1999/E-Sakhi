@@ -10,7 +10,9 @@ import * as z from "zod";
  * not conventional" guarantee.
  */
 
-const STATION_STATUS_VALUES = ["ACTIVE", "INACTIVE", "UNKNOWN"] as const;
+// Station status is a simplified two-value concept by product decision —
+// see src/services/excel-station-parser.ts's mapStationStatus().
+const STATION_STATUS_VALUES = ["ACTIVE", "INACTIVE"] as const;
 const VERIFICATION_STATUS_VALUES = [
   "VERIFIED",
   "PARTIALLY_VERIFIED",

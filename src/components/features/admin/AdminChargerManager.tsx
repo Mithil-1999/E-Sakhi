@@ -325,8 +325,13 @@ function ChargerEditor(props: ChargerEditorProps) {
 
       <div>
         <p className="text-xs font-medium text-slate-700 dark:text-slate-200">Connectors</p>
+        {/* CHAdeMO excluded — zero chargers in the current dataset use it
+            (see connector-service.ts's SELECTABLE_CONNECTORS comment);
+            "Unknown" stays offered here, unlike the public filter
+            pickers, since an admin genuinely marking a real charger's
+            connector as honestly unrecorded is a legitimate choice. */}
         <div className="mt-2 flex flex-wrap gap-3">
-          {CANONICAL_CONNECTORS.map((c) => (
+          {CANONICAL_CONNECTORS.filter((c) => c.code !== "CHADEMO").map((c) => (
             <label key={c.code} className="flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-200">
               <input
                 type="checkbox"

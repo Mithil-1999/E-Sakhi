@@ -11,7 +11,7 @@ import type { AdminOperatorOption, AdminStationDetail } from "@/types/admin";
 const inputClass =
   "mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900";
 
-const STATUS_OPTIONS = ["UNKNOWN", "ACTIVE", "INACTIVE"] as const;
+const STATUS_OPTIONS = ["ACTIVE", "INACTIVE"] as const;
 const VERIFICATION_OPTIONS = [
   "UNKNOWN",
   "ASSUMED",
@@ -66,7 +66,7 @@ function emptyForm(): FormState {
     latitude: "",
     longitude: "",
     mapUrl: "",
-    status: "UNKNOWN",
+    status: "ACTIVE",
     verificationStatus: "UNKNOWN",
     assumptionFlag: false,
     verificationSource: "",

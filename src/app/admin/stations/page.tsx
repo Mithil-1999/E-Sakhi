@@ -16,10 +16,9 @@ export const metadata: Metadata = {
   title: "Manage Stations",
 };
 
-const STATUS_LABELS: Record<"ACTIVE" | "INACTIVE" | "UNKNOWN", string> = {
+const STATUS_LABELS: Record<"ACTIVE" | "INACTIVE", string> = {
   ACTIVE: "Active",
   INACTIVE: "Inactive",
-  UNKNOWN: "Unknown",
 };
 
 // Same filter keys StationFilterPanel already reads/writes — reused as-is

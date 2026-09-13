@@ -1,19 +1,17 @@
 import Link from "next/link";
 import { MapPin, Zap } from "lucide-react";
-import { VerificationBadge } from "@/components/ui/VerificationBadge";
+import { PublicVerificationBadge } from "@/components/ui/PublicVerificationBadge";
 import { FavoriteButton } from "@/components/features/FavoriteButton";
 import type { StationListItem } from "@/types/station";
 
 const STATUS_STYLES: Record<StationListItem["status"], string> = {
   ACTIVE: "text-emerald-700 dark:text-emerald-400",
   INACTIVE: "text-red-600 dark:text-red-400",
-  UNKNOWN: "text-slate-500 dark:text-slate-400",
 };
 
 const STATUS_LABELS: Record<StationListItem["status"], string> = {
   ACTIVE: "Active",
   INACTIVE: "Inactive",
-  UNKNOWN: "Status unknown",
 };
 
 export type StationCardFavoriteState = {
@@ -82,7 +80,7 @@ export function StationCard({
               </span>
             </p>
           </div>
-          <VerificationBadge status={station.verificationStatus} className="shrink-0" />
+          <PublicVerificationBadge status={station.verificationStatus} className="shrink-0" />
         </div>
 
         <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">

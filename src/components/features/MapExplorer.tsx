@@ -6,7 +6,6 @@ import { Filter, Locate, MapPin, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { MapFilterPanel, EMPTY_MAP_FILTERS, type MapFilters } from "@/components/features/MapFilterPanel";
 import { StationPopupContent } from "@/components/features/StationPopupContent";
-import { MapLegend } from "@/components/features/MapLegend";
 import type { StationMapMarker, FlyToTarget } from "@/components/map/MapProvider";
 import type { ApiListResponse, ApiErrorResponse, StationListItem } from "@/types/station";
 
@@ -122,16 +121,9 @@ export function MapExplorer() {
         id: station.id,
         position: [station.latitude as number, station.longitude as number],
         popup: <StationPopupContent station={station} />,
-        isApproximate: station.coordinateSource === "APPROXIMATE",
       })),
     [stationsWithLocation]
   );
-
-  const verifiedCount = useMemo(
-    () => stationsWithLocation.filter((s) => s.coordinateSource === "EXACT").length,
-    [stationsWithLocation]
-  );
-  const approximateCount = stationsWithLocation.length - verifiedCount;
 
   const handleUseMyLocation = useCallback(() => {
     if (!("geolocation" in navigator)) {
@@ -215,15 +207,6 @@ export function MapExplorer() {
                   {stationsWithLocation.length}
                 </span>{" "}
                 {stationsWithLocation.length === 1 ? "has" : "have"} a location shown on the map
-                {stationsWithLocation.length > 0 && (
-                  <>
-                    {" "}
-                    (<span className="font-medium text-emerald-700 dark:text-emerald-400">{verifiedCount}</span>{" "}
-                    verified,{" "}
-                    <span className="font-medium text-amber-700 dark:text-amber-400">{approximateCount}</span>{" "}
-                    approximate)
-                  </>
-                )}
                 {stationsWithLocation.length === 0 && total > 0 && (
                   <>
                     {" "}
@@ -262,15 +245,6 @@ export function MapExplorer() {
             {geoStatus === "denied"
               ? "Location permission was denied — you can still browse and zoom the map manually, or use \"Nepal view\" to recenter."
               : "Your browser doesn't support location detection — browse and zoom the map manually instead."}
-          </div>
-        )}
-
-        {/* Bottom-left: clear of Leaflet's own top-left zoom control and
-            bottom-right attribution, and clear of the popup pane (700)
-            same z-[650] reasoning as the top overlay above. */}
-        {markers.length > 0 && (
-          <div className="absolute bottom-4 left-3 z-[650]">
-            <MapLegend />
           </div>
         )}
 

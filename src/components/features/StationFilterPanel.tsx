@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { NEPAL_PROVINCES } from "@/lib/config/nepal-provinces";
-import { CANONICAL_CONNECTORS } from "@/services/connector-service";
+import { SELECTABLE_CONNECTORS } from "@/services/connector-service";
 import { POWER_BUCKETS } from "@/lib/config/power-buckets";
 
 export type StationFilterValues = {
@@ -18,7 +18,7 @@ export type StationFilterValues = {
 };
 
 const CHARGING_MODES = ["AC", "DC", "UNKNOWN"] as const;
-const STATUSES = ["ACTIVE", "INACTIVE", "UNKNOWN"] as const;
+const STATUSES = ["ACTIVE", "INACTIVE"] as const;
 const VEHICLE_TYPES = ["CAR", "SCOOTER", "MOTORCYCLE", "OTHER"] as const;
 const AVAILABILITIES = ["AVAILABLE", "BUSY", "UNAVAILABLE", "UNKNOWN"] as const;
 
@@ -130,7 +130,7 @@ export function StationFilterPanel({ currentFilters }: { currentFilters: Station
             className={selectClass}
           >
             <option value="">All connectors</option>
-            {CANONICAL_CONNECTORS.filter((c) => c.code !== "UNKNOWN").map((c) => (
+            {SELECTABLE_CONNECTORS.map((c) => (
               <option key={c.code} value={c.code}>
                 {c.label}
               </option>
@@ -208,7 +208,7 @@ export function StationFilterPanel({ currentFilters }: { currentFilters: Station
             <option value="">Any status</option>
             {STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s === "ACTIVE" ? "Active" : s === "INACTIVE" ? "Inactive" : "Unknown"}
+                {s === "ACTIVE" ? "Active" : "Inactive"}
               </option>
             ))}
           </select>

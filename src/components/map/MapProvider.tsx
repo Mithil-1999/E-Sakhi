@@ -7,12 +7,7 @@ import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { useEffect, type ReactNode } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
-import {
-  getStationIcon,
-  getApproximateStationIcon,
-  getUserPositionIcon,
-  createClusterIcon,
-} from "@/components/map/markerIcons";
+import { getStationIcon, getUserPositionIcon, createClusterIcon } from "@/components/map/markerIcons";
 
 /**
  * E Sakhi's map wrapper — see docs/architecture.md §6. This is the ONLY
@@ -37,8 +32,6 @@ export type StationMapMarker = {
   position: [number, number];
   /** Plain React content for the marker's popup — built by the caller, no Leaflet API needed. */
   popup: ReactNode;
-  /** True when this coordinate is CoordinateSource.APPROXIMATE — renders with a distinct (amber) marker so it's never visually confused with an exact station location. See docs/data-model.md §10. */
-  isApproximate?: boolean;
 };
 
 export type FlyToTarget = {
@@ -80,7 +73,6 @@ export function StationMap({
   className,
 }: StationMapProps) {
   const stationIcon = getStationIcon();
-  const approximateIcon = getApproximateStationIcon();
 
   return (
     <MapContainer
@@ -102,7 +94,7 @@ export function StationMap({
           <Marker
             key={marker.id}
             position={marker.position}
-            icon={marker.isApproximate ? approximateIcon : stationIcon}
+            icon={stationIcon}
             eventHandlers={onMarkerClick ? { click: () => onMarkerClick(marker.id) } : undefined}
           >
             {/* Keeps popups from opening underneath the feature UI's

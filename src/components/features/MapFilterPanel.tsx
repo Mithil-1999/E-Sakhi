@@ -1,5 +1,5 @@
 import { NEPAL_PROVINCES } from "@/lib/config/nepal-provinces";
-import { CANONICAL_CONNECTORS } from "@/services/connector-service";
+import { SELECTABLE_CONNECTORS } from "@/services/connector-service";
 
 export type MapFilters = {
   search: string;
@@ -18,7 +18,7 @@ export const EMPTY_MAP_FILTERS: MapFilters = {
 };
 
 const CHARGING_MODES = ["AC", "DC", "UNKNOWN"] as const;
-const STATUSES = ["ACTIVE", "INACTIVE", "UNKNOWN"] as const;
+const STATUSES = ["ACTIVE", "INACTIVE"] as const;
 
 const selectClass =
   "mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900";
@@ -82,7 +82,7 @@ export function MapFilterPanel({
           className={selectClass}
         >
           <option value="">All connectors</option>
-          {CANONICAL_CONNECTORS.filter((c) => c.code !== "UNKNOWN").map((c) => (
+          {SELECTABLE_CONNECTORS.map((c) => (
             <option key={c.code} value={c.code}>
               {c.label}
             </option>
@@ -122,7 +122,7 @@ export function MapFilterPanel({
           <option value="">Any status</option>
           {STATUSES.map((s) => (
             <option key={s} value={s}>
-              {s === "ACTIVE" ? "Active" : s === "INACTIVE" ? "Inactive" : "Unknown"}
+              {s === "ACTIVE" ? "Active" : "Inactive"}
             </option>
           ))}
         </select>

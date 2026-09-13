@@ -5,7 +5,9 @@
  * code, even just for types.
  */
 
-export type StationStatus = "ACTIVE" | "INACTIVE" | "UNKNOWN";
+// Simplified to two values by product decision — every station is
+// ACTIVE unless explicitly INACTIVE; see src/lib/validation/station.ts.
+export type StationStatus = "ACTIVE" | "INACTIVE";
 
 export type VerificationStatus =
   | "VERIFIED"

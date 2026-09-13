@@ -100,11 +100,15 @@ export async function readStationRows(buffer: Buffer | ArrayBuffer): Promise<Raw
 // Part 02 addendum in docs/data-model.md for the full rationale).
 // ---------------------------------------------------------------------------
 
-export function mapStationStatus(rawStatus: string | null): "ACTIVE" | "INACTIVE" | "UNKNOWN" {
+export function mapStationStatus(rawStatus: string | null): "ACTIVE" | "INACTIVE" {
   if (rawStatus === "Not Available") return "INACTIVE";
-  // "Listed" only confirms the compiler listed it, not that it is
-  // operationally active — that is a real-time-shaped fact we don't have.
-  return "UNKNOWN";
+  // Simplified to a two-value status by product decision: every station
+  // defaults to ACTIVE unless the source data explicitly says otherwise
+  // ("Not Available" -> INACTIVE, above). StationStatus.UNKNOWN still
+  // exists in the schema (see prisma/schema.prisma) so it isn't a
+  // breaking migration, but nothing in this app sets or displays it
+  // anymore — see docs/architecture.md's station-status note.
+  return "ACTIVE";
 }
 
 export type VerificationOutcome = {

@@ -14,7 +14,7 @@ import { prisma } from "@/lib/db/prisma";
  * it never mutates.
  */
 
-export type StationStatusCounts = { status: "ACTIVE" | "INACTIVE" | "UNKNOWN"; count: number };
+export type StationStatusCounts = { status: "ACTIVE" | "INACTIVE"; count: number };
 export type VerificationStatusCounts = { status: VerificationStatus; count: number };
 export type ReportStatusCounts = { status: ReportStatus; count: number };
 
@@ -48,7 +48,10 @@ export type AdminDashboardStats = {
   reportStatusDistribution: ReportStatusCounts[];
 };
 
-const ALL_STATION_STATUSES = ["ACTIVE", "INACTIVE", "UNKNOWN"] as const;
+// Station status is a simplified two-value concept by product decision —
+// every station is ACTIVE unless explicitly INACTIVE. See
+// src/services/station-service.ts's normalizeStationStatus().
+const ALL_STATION_STATUSES = ["ACTIVE", "INACTIVE"] as const;
 
 export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
   const [

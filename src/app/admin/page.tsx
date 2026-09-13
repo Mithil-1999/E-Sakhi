@@ -23,16 +23,14 @@ export const metadata: Metadata = {
   title: "Admin",
 };
 
-const STATION_STATUS_LABELS: Record<"ACTIVE" | "INACTIVE" | "UNKNOWN", string> = {
+const STATION_STATUS_LABELS: Record<"ACTIVE" | "INACTIVE", string> = {
   ACTIVE: "Active",
   INACTIVE: "Inactive",
-  UNKNOWN: "Unknown",
 };
 
-const STATION_STATUS_STYLES: Record<"ACTIVE" | "INACTIVE" | "UNKNOWN", string> = {
+const STATION_STATUS_STYLES: Record<"ACTIVE" | "INACTIVE", string> = {
   ACTIVE: "bg-emerald-500",
   INACTIVE: "bg-red-500",
-  UNKNOWN: "bg-slate-400",
 };
 
 /**

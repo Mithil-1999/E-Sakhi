@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
-import { VerificationBadge } from "@/components/ui/VerificationBadge";
+import { PublicVerificationBadge } from "@/components/ui/PublicVerificationBadge";
 import { VerificationChecklist } from "@/components/ui/VerificationChecklist";
 import { StarRating } from "@/components/ui/StarRating";
 import { StationLocationMap } from "@/components/features/StationLocationMap";
@@ -29,13 +29,11 @@ import { listReviewsForStation, getOwnReview } from "@/services/review-service";
 const STATUS_STYLES: Record<StationDetail["status"], string> = {
   ACTIVE: "text-emerald-700 dark:text-emerald-400",
   INACTIVE: "text-red-600 dark:text-red-400",
-  UNKNOWN: "text-slate-500 dark:text-slate-400",
 };
 
 const STATUS_LABELS: Record<StationDetail["status"], string> = {
   ACTIVE: "Active",
   INACTIVE: "Inactive",
-  UNKNOWN: "Status unknown",
 };
 
 type ChargerRow = StationDetail["chargers"][number];
@@ -155,7 +153,7 @@ export default async function StationDetailPage({ params }: PageProps<"/stations
           <span className={`text-sm font-semibold ${STATUS_STYLES[station.status]}`}>
             {STATUS_LABELS[station.status]}
           </span>
-          <VerificationBadge status={station.verificationStatus} />
+          <PublicVerificationBadge status={station.verificationStatus} />
         </div>
       </div>
 
@@ -288,7 +286,7 @@ export default async function StationDetailPage({ params }: PageProps<"/stations
               <div>
                 <dt className="text-xs text-slate-500 dark:text-slate-400">Status</dt>
                 <dd className="mt-0.5">
-                  <VerificationBadge status={station.verificationStatus} />
+                  <PublicVerificationBadge status={station.verificationStatus} />
                 </dd>
               </div>
               <div>
