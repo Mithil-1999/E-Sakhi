@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { MapPinned, BatteryCharging, ShieldCheck, Sparkles } from "lucide-react";
+import { MapPinned, BatteryCharging, Sparkles } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 
 type Feature = {
@@ -27,12 +27,6 @@ const features: Feature[] = [
     description:
       "Compare stations ranked by compatibility, distance, charging power, and rating — not just which one is nearest.",
   },
-  {
-    icon: ShieldCheck,
-    title: "Honest data",
-    description:
-      "Every station shows its verification status, so you always know what's confirmed and what's still being checked.",
-  },
 ];
 
 export function FeatureSection() {
@@ -52,7 +46,7 @@ export function FeatureSection() {
           </p>
         </div>
 
-        <div className="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {features.map(({ icon: Icon, title, description }) => (
             <div
               key={title}

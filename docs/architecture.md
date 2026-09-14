@@ -1,6 +1,6 @@
 # E Sakhi — Architecture
 
-**E Sakhi** — *Find. Charge. Go.*
+**E Sakhi** — *हर यात्रा मे अहाँक संग*
 
 This document locks the architectural decisions for E Sakhi before implementation begins. It exists so that every future development session (and every future contributor) can rebuild the same mental model without re-deriving it. Decisions here should be treated as stable; changing them later requires a deliberate, documented reason — not a rewrite of convenience.
 

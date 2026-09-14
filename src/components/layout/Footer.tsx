@@ -33,7 +33,7 @@ export function Footer() {
           <div className="md:col-span-2">
             <Logo />
             <p className="mt-3 max-w-sm text-sm text-slate-600 dark:text-slate-400">
-              Find. Charge. Go. E Sakhi helps EV drivers in Nepal find
+              हर यात्रा मे अहाँक संग। E Sakhi helps EV drivers in Nepal find
               charging stations, check compatibility, and plan charging with
               honest, progressively-verified data.
             </p>

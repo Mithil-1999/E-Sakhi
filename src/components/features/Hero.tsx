@@ -9,7 +9,7 @@ export function Hero() {
           E Sakhi
         </h1>
         <p className="mt-3 text-xl font-semibold text-emerald-600 sm:text-2xl dark:text-emerald-400">
-          Find. Charge. Go.
+          हर यात्रा मे अहाँक संग
         </p>
         <p className="mt-6 max-w-2xl text-lg text-slate-600 dark:text-slate-300">
           Find EV charging stations across Nepal and get smart charging

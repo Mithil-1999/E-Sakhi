@@ -17,7 +17,7 @@ export const EMPTY_MAP_FILTERS: MapFilters = {
   status: "",
 };
 
-const CHARGING_MODES = ["AC", "DC", "UNKNOWN"] as const;
+const CHARGING_MODES = ["AC", "DC"] as const;
 const STATUSES = ["ACTIVE", "INACTIVE"] as const;
 
 const selectClass =
@@ -103,7 +103,7 @@ export function MapFilterPanel({
           <option value="">AC or DC</option>
           {CHARGING_MODES.map((m) => (
             <option key={m} value={m}>
-              {m === "UNKNOWN" ? "Unknown" : m}
+              {m}
             </option>
           ))}
         </select>

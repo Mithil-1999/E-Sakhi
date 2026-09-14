@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "E Sakhi — Find. Charge. Go.",
+    default: "E Sakhi — हर यात्रा मे अहाँक संग",
     template: "%s — E Sakhi",
   },
   description:

@@ -1,6 +1,6 @@
 # E Sakhi
 
-**Find. Charge. Go.**
+**हर यात्रा मे अहाँक संग**
 
 E Sakhi is a smart Electric Vehicle (EV) charging-station discovery and recommendation platform focused primarily on Nepal. It helps EV drivers find charging stations, understand which chargers actually fit their vehicle, estimate charging time, and get station recommendations that account for compatibility, distance, power, availability, rating, and how well-verified the station's data actually is.
 
@@ -280,4 +280,4 @@ Full checklist, verified line-by-line against the actual implementation in Part 
 
 ---
 
-*E Sakhi — Find. Charge. Go.*
+*E Sakhi — हर यात्रा मे अहाँक संग*

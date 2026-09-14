@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import { decimalToNumber } from "@/lib/db/serialize";
 import { buildPaginationMeta } from "@/lib/validation/pagination";
 import { findPowerBucket } from "@/lib/config/power-buckets";
+import { SELECTABLE_CONNECTORS } from "@/services/connector-service";
 import type {
   StationListQuery,
   StationCreateInput,
@@ -211,6 +212,55 @@ export async function getStationRatingsBatch(
     });
   }
   return byStationId;
+}
+
+// ---------------------------------------------------------------------------
+// Public homepage stats
+// ---------------------------------------------------------------------------
+
+export type PublicStats = {
+  stationCount: number;
+  chargerCount: number;
+  districtCount: number;
+  connectorTypeCount: number;
+};
+
+/**
+ * Lean, public-safe aggregate for the homepage stats strip. Deliberately
+ * separate from admin-dashboard-service.ts's getAdminDashboardStats() —
+ * that one pulls in user/report/favorite counts a homepage visitor has no
+ * business triggering queries for. Every number here is computed fresh
+ * from the live database, same "no invented numbers" rule as everywhere
+ * else in this app.
+ */
+export async function getPublicStats(): Promise<PublicStats> {
+  const [stationCount, chargerCount, districts, connectors] = await Promise.all([
+    prisma.station.count({ where: { isDeleted: false } }),
+    prisma.charger.count({ where: { isDeleted: false, station: { isDeleted: false } } }),
+    prisma.station.findMany({
+      where: { isDeleted: false },
+      select: { district: true },
+      distinct: ["district"],
+    }),
+    prisma.chargerConnector.findMany({
+      where: { charger: { isDeleted: false, station: { isDeleted: false } } },
+      select: { connector: { select: { code: true } } },
+      distinct: ["connectorId"],
+    }),
+  ]);
+
+  // "Connector Types" counts only the picker-facing types (see
+  // SELECTABLE_CONNECTORS in connector-service.ts) — Unknown isn't a real
+  // connector type, and CHAdeMO has zero real usage in the seeded dataset.
+  const selectableCodes = new Set(SELECTABLE_CONNECTORS.map((c) => c.code));
+  const connectorTypeCount = connectors.filter((c) => selectableCodes.has(c.connector.code)).length;
+
+  return {
+    stationCount,
+    chargerCount,
+    districtCount: districts.filter((d) => d.district.trim().length > 0).length,
+    connectorTypeCount,
+  };
 }
 
 // ---------------------------------------------------------------------------

@@ -17,7 +17,7 @@ export type StationFilterValues = {
   availability: string;
 };
 
-const CHARGING_MODES = ["AC", "DC", "UNKNOWN"] as const;
+const CHARGING_MODES = ["AC", "DC"] as const;
 const STATUSES = ["ACTIVE", "INACTIVE"] as const;
 const VEHICLE_TYPES = ["CAR", "SCOOTER", "MOTORCYCLE", "OTHER"] as const;
 const AVAILABILITIES = ["AVAILABLE", "BUSY", "UNAVAILABLE", "UNKNOWN"] as const;
@@ -151,7 +151,7 @@ export function StationFilterPanel({ currentFilters }: { currentFilters: Station
             <option value="">AC or DC</option>
             {CHARGING_MODES.map((m) => (
               <option key={m} value={m}>
-                {m === "UNKNOWN" ? "Unknown" : m}
+                {m}
               </option>
             ))}
           </select>
