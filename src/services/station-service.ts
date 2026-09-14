@@ -296,18 +296,14 @@ function buildStationWhere(
 
   if (query.chargingMode || query.connector || query.powerBucket || query.vehicleType || query.availability) {
     const bucket = query.powerBucket ? findPowerBucket(query.powerBucket) : undefined;
-    // "Unknown" bucket = no recorded power_kw at all, an honest bucket
-    // rather than a fallback default — see src/lib/config/power-buckets.ts.
     const powerCondition: Prisma.ChargerWhereInput | undefined = !bucket
       ? undefined
-      : bucket.id === "UNKNOWN"
-        ? { powerKw: null }
-        : {
-            powerKw: {
-              ...(bucket.min !== null ? { gt: bucket.min } : {}),
-              ...(bucket.max !== null ? { lte: bucket.max } : {}),
-            },
-          };
+      : {
+          powerKw: {
+            ...(bucket.min !== null ? { gt: bucket.min } : {}),
+            ...(bucket.max !== null ? { lte: bucket.max } : {}),
+          },
+        };
 
     where.chargers = {
       some: {

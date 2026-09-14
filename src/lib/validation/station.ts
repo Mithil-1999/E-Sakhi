@@ -22,7 +22,11 @@ const VERIFICATION_STATUS_VALUES = [
 ] as const;
 const CHARGING_MODE_VALUES = ["AC", "DC", "UNKNOWN"] as const;
 const VEHICLE_TYPE_VALUES = ["CAR", "SCOOTER", "MOTORCYCLE", "OTHER"] as const;
-const CHARGER_AVAILABILITY_VALUES = ["AVAILABLE", "BUSY", "UNAVAILABLE", "UNKNOWN"] as const;
+// "Unknown" is deliberately excluded from this filter's own accepted
+// values (unlike the Prisma-level ChargerAvailability enum, which keeps
+// it as a legitimate admin data-entry state — see src/lib/validation/
+// charger.ts). This is the public /stations "Availability" filter only.
+const CHARGER_AVAILABILITY_VALUES = ["AVAILABLE", "BUSY", "UNAVAILABLE"] as const;
 
 export const StationListQuerySchema = PaginationQuerySchema.extend({
   search: z.string().trim().min(1).max(200).optional(),

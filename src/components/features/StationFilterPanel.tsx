@@ -20,7 +20,7 @@ export type StationFilterValues = {
 const CHARGING_MODES = ["AC", "DC"] as const;
 const STATUSES = ["ACTIVE", "INACTIVE"] as const;
 const VEHICLE_TYPES = ["CAR", "SCOOTER", "MOTORCYCLE", "OTHER"] as const;
-const AVAILABILITIES = ["AVAILABLE", "BUSY", "UNAVAILABLE", "UNKNOWN"] as const;
+const AVAILABILITIES = ["AVAILABLE", "BUSY", "UNAVAILABLE"] as const;
 
 const VEHICLE_LABELS: Record<(typeof VEHICLE_TYPES)[number], string> = {
   CAR: "Car",
@@ -33,7 +33,6 @@ const AVAILABILITY_LABELS: Record<(typeof AVAILABILITIES)[number], string> = {
   AVAILABLE: "Available",
   BUSY: "Busy",
   UNAVAILABLE: "Unavailable",
-  UNKNOWN: "Unknown",
 };
 
 const DEBOUNCE_MS = 400;
@@ -232,8 +231,8 @@ export function StationFilterPanel({ currentFilters }: { currentFilters: Station
             ))}
           </select>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            No real-time source is connected yet — nearly every charger is
-            &quot;Unknown&quot; today.
+            No real-time source is connected yet, so most chargers won&apos;t
+            match a specific availability.
           </p>
         </div>
       </div>
