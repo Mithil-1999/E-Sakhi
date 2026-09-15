@@ -244,11 +244,6 @@ export function ChargingCalculatorTool({ vehicles }: { vehicles: VehicleListItem
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Reference specs from public manufacturer data — actual figures can vary by trim/year.
-            Only cars are catalogued today; for a scooter, motorcycle, or any other car, use
-            &quot;Custom vehicle&quot; and enter its real specs below.
-          </p>
 
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
@@ -325,9 +320,6 @@ export function ChargingCalculatorTool({ vehicles }: { vehicles: VehicleListItem
                 className={inputClass}
                 placeholder="Unknown"
               />
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Optional — manufacturer-published full-charge range. Adds a km estimate below.
-              </p>
             </div>
           </div>
 
