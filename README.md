@@ -50,6 +50,58 @@ Next.js App (App Router)
 
 Business logic (charging math, recommendation scoring, connector normalization, import matching) lives in `src/services/`, never inside React components. Every sensitive action is authorized **server-side**, regardless of what the UI hides. Full detail: [docs/architecture.md](docs/architecture.md).
 
+## Project Structure
+
+E Sakhi is a **Next.js full-stack app** — frontend and backend are not two separate servers/folders, they're two layers of one codebase, which is the standard architecture for a Next.js (App Router) project. There is nothing "missing" or "external": every page, every API endpoint, every database query, and every style rule is a real file inside `src/`, committed to this repo, and runs from the one `npm run dev` command below.
+
+```text
+e-sakhi/
+├── prisma/                      # DATABASE layer
+│   ├── schema.prisma             # Models/tables (Station, Charger, Vehicle, User, ...)
+│   ├── migrations/               # Every schema change, in order, applied via `prisma migrate`
+│   ├── seed.ts, seed-vehicles.ts # Seed scripts — load the real dataset into a fresh database
+│   └── seed-data/                # The committed source Excel workbook
+│
+├── src/
+│   ├── app/                      # FRONTEND (pages) + BACKEND (API), Next.js App Router convention
+│   │   ├── page.tsx, layout.tsx, .../page.tsx   # Every route the browser renders (frontend)
+│   │   ├── admin/**                              # Admin-only pages (frontend, route-protected)
+│   │   └── api/**/route.ts                       # Every backend API endpoint (see table below) —
+│   │                                                each route.ts's GET/POST/PUT/DELETE exports
+│   │                                                ARE the backend, no separate server needed
+│   │
+│   ├── components/               # FRONTEND — React components
+│   │   ├── ui/                    # Small generic building blocks (Button, Container, ...)
+│   │   ├── layout/                # Header, Footer
+│   │   ├── map/                   # Leaflet map wrapper
+│   │   └── features/              # Page-specific components (StationCard, filters, admin forms, ...)
+│   │
+│   ├── services/                 # BACKEND — business logic (station/charger/vehicle/recommendation/
+│   │                                charging-calculator/import/report/review services). API routes
+│   │                                stay thin wrappers around these; a Server Component page can
+│   │                                also call them directly (see docs/architecture.md §4).
+│   │
+│   ├── lib/                      # BACKEND (+ shared) — cross-cutting code
+│   │   ├── auth/                  # Auth.js config, session helpers, route-protection guards
+│   │   ├── db/                    # Prisma client singleton, Decimal→number serialization
+│   │   ├── validation/            # Zod schemas — every API input is validated here
+│   │   ├── api/                   # Shared JSON response helpers ({ data, meta } / { error })
+│   │   ├── config/                # Canonical lookup lists (provinces, power buckets, ...)
+│   │   └── geo/                   # Haversine distance helper
+│   │
+│   └── types/                     # Shared TypeScript types the frontend imports (never imports
+│                                     "server-only" backend code, just the shapes it returns)
+│
+├── public/                       # Static assets (currently empty — no custom images are used;
+│                                    icons come from the lucide-react component library)
+├── scripts/                      # One-off admin scripts (create-admin, verify-import)
+├── .env.example                  # Every environment variable this project uses, documented
+├── package.json                  # Single package.json — one `npm install` for the whole app
+└── prisma.config.ts               # Prisma 7's connection config (see note below)
+```
+
+**Why one project, not `frontend/` + `backend/` folders:** in Next.js's App Router, a page (`page.tsx`) and its API (`api/.../route.ts`) live in the same `src/app` tree by framework convention, share the same TypeScript types, the same `npm install`, and the same dev server — splitting them into separate folders/servers would mean duplicating types, running two servers for one app, and fighting the framework rather than using it. This is the same architecture Vercel (Next.js's creator), and most modern full-stack JS/TS projects, use in production. Everything your supervisor would look for — real API endpoints, real database queries, real validation, real auth — is present; it's just organized by Next.js's `app/` and `api/` convention instead of a `frontend/`/`backend/` folder split.
+
 ## Database Overview
 
 Core relationship — a station has many chargers/plugs, and this relationship is never collapsed:
@@ -65,7 +117,9 @@ Plus `Operator`, `Vehicle` (with multi-connector compatibility), `User`, `Favori
 
 ## Getting Started
 
-Prerequisites: Node.js 20+, PostgreSQL 16+ (developed against 17).
+Prerequisites: Node.js 20+, PostgreSQL 16+ (developed against 17), npm.
+
+**One server, one terminal, one command** — this is a single Next.js app, not a separate frontend server and backend server, so there is only one `npm install` and one `npm run dev` to run, not two:
 
 ```bash
 npm install
@@ -74,6 +128,8 @@ npx prisma migrate dev
 npm run db:seed
 npm run dev
 ```
+
+Then open **http://localhost:3000** in a browser — that single dev server serves every page (frontend) and every `/api/*` endpoint (backend) at once.
 
 `npm run dev` serves the home page, a working `/map`, `/stations` (search/filters), `/stations/[id]` (station details, real reviews, and a report flow), `/charging-calculator`, `/recommendations`, `/dashboard`, `/my-favorites`, plus `/login`, `/register`, `/profile`, a real `/admin` overview dashboard, admin station/charger management at `/admin/stations`, a verification workflow at `/admin/verification`, an Excel re-import tool at `/admin/import`, and a report-triage queue at `/admin/reports`.
 
@@ -117,6 +173,7 @@ All station data is served from the database through these endpoints — nothing
 |---|---|---|
 | `GET /api/stations` | Public | Paginated (`page`, `pageSize`, max 100), filterable by `search`, `province`, `district`, `city`, `operatorId`, `status`, `verificationStatus`, `connector`, `chargingMode`, `powerBucket`, `vehicleType`, `availability` (the last three added in Part 06). Excludes soft-deleted stations unless the caller is an authenticated `ADMIN` and passes `includeDeleted=true` (silently ignored otherwise). |
 | `GET /api/stations/[id]` | Public | `[id]` is the internal `Station.id`, not the source `station_id` (e.g. `EVNP-0001`). Includes full chargers/connectors and a `rating` computed live from real `Review` rows (Part 15). |
+| `GET /api/stations/nearby` | Public | Query `latitude`, `longitude`, optional `limit` (max 20, default 5). Straight-line-distance lookup over stations with a confirmed coordinate only — powers the Charging Calculator's "Find stations near me". Distinct from `/api/recommendations`: no vehicle input, no compatibility scoring, just distance. |
 | `POST /api/stations` | `ADMIN` | Creates a station. Coordinates are never invented — omit `latitude`/`longitude` rather than guessing. |
 | `PUT /api/stations/[id]` | `ADMIN` | Partial update (send only the fields you're changing). Any verification-field change is written to `VerificationLog` automatically, in the same transaction. |
 | `DELETE /api/stations/[id]` | `ADMIN` | Soft delete only (`is_deleted`/`deleted_at`/`deleted_by`) — also soft-deletes that station's chargers. Returns the updated (now-deleted) station rather than `204`. |
@@ -267,6 +324,20 @@ Built incrementally, in the order below. Each part is tested, committed, and lef
 ## Future Features (not yet implemented, by design)
 
 Real-time charger availability, operator APIs, payment/booking, charging-session tracking, electricity-cost calculation, route planning, push notifications, a mobile app, a station-owner portal, QR codes, and user-submitted stations are all explicitly **out of scope** until requested — the architecture is written so they can be added later without a rebuild, not so they're half-built now.
+
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `npm run dev` fails with a Prisma/`PrismaClient` error | Run `npx prisma generate` (regenerates the Prisma Client from `schema.prisma` — needed after `npm install` or any schema change; `postinstall` should do this automatically, but a manual run never hurts). |
+| `P1001: Can't reach database server` | PostgreSQL isn't running, or `DATABASE_URL` in `.env` is wrong. Check the service is started and the connection string's host/port/credentials/database name match your local Postgres setup. |
+| `relation "stations" does not exist` (or similar) | Migrations haven't been applied yet — run `npx prisma migrate dev`. |
+| Pages load but show 0 stations / empty lists | The database has no data yet — run `npm run db:seed` (idempotent, safe to re-run). |
+| Can't log in as admin | No admin account exists yet — set `ADMIN_SEED_EMAIL`/`ADMIN_SEED_PASSWORD` in `.env`, then run `npm run db:create-admin`. |
+| PowerShell blocks `npm` with an execution-policy error | Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once in that PowerShell profile, or run the commands from a Command Prompt/Git Bash terminal instead. |
+| Port 3000 already in use | Another `next dev` is already running (check other terminals/VS Code windows), or run `npm run dev -- -p 3001` to use a different port. |
+| Map tiles don't load | `NEXT_PUBLIC_MAP_TILE_URL` is unset — it defaults to the public OpenStreetMap tile server, which is fine for local development. |
+| TypeScript/build errors after pulling new code | Run `npm install` (new dependency) and `npx prisma generate` (schema may have changed), then retry. |
 
 ## Security Considerations
 
