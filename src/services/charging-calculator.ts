@@ -27,6 +27,12 @@ export type VehiclePowerProfile = {
 export type CalculatorVehicleInput = VehiclePowerProfile & {
   /** Usable battery capacity, kWh. */
   batteryCapacityKwh: number;
+  /**
+   * Manufacturer-published full-charge range, km — null/omitted if not on
+   * record. Powers the optional range estimate below only; the energy/time
+   * estimate never depends on it.
+   */
+  fullRangeKm?: number | null;
 };
 
 export type CalculatorChargerInput = {
@@ -90,6 +96,13 @@ export type ChargingEstimate = {
   limitingFactor: "vehicle" | "charger" | null;
   /** Set whenever effectivePowerKw/estimatedMinutes couldn't be computed, explaining why — never silently left blank. */
   note: string | null;
+  /**
+   * Range estimate derived from vehicle.fullRangeKm (assumes range scales
+   * linearly with battery %, same simplifying assumption as the constant-
+   * power time estimate above) — null whenever fullRangeKm isn't on
+   * record, never guessed from battery capacity alone.
+   */
+  range: { currentRangeKm: number; rangeAddedKm: number; targetRangeKm: number } | null;
 };
 
 /**
@@ -139,6 +152,15 @@ export function calculateChargingEstimate(
     2
   );
 
+  const range =
+    vehicle.fullRangeKm != null && vehicle.fullRangeKm > 0
+      ? {
+          currentRangeKm: round((vehicle.fullRangeKm * currentPercent) / 100, 1),
+          rangeAddedKm: round((vehicle.fullRangeKm * (targetPercent - currentPercent)) / 100, 1),
+          targetRangeKm: round((vehicle.fullRangeKm * targetPercent) / 100, 1),
+        }
+      : null;
+
   const effective = getEffectiveChargingPowerKw(vehicle, charger);
 
   if (!effective.ok) {
@@ -151,7 +173,7 @@ export function calculateChargingEstimate(
 
     return {
       ok: true,
-      data: { energyRequiredKwh, effectivePowerKw: null, estimatedMinutes: null, limitingFactor: null, note },
+      data: { energyRequiredKwh, effectivePowerKw: null, estimatedMinutes: null, limitingFactor: null, note, range },
     };
   }
 
@@ -168,6 +190,7 @@ export function calculateChargingEstimate(
       estimatedMinutes,
       limitingFactor: estimatedMinutes === null ? null : effective.limitingFactor,
       note: null,
+      range,
     },
   };
 }

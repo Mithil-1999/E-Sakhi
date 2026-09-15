@@ -26,6 +26,7 @@ function toVehicleListItem(vehicle: VehicleListRow) {
     batteryCapacityKwh: decimalToNumber(vehicle.batteryCapacityKwh) as number,
     maxDcPowerKw: decimalToNumber(vehicle.maxDcPowerKw),
     maxAcPowerKw: decimalToNumber(vehicle.maxAcPowerKw),
+    fullRangeKm: decimalToNumber(vehicle.fullRangeKm),
     connectors: vehicle.connectors.map((vc) => ({
       code: vc.connector.code,
       label: vc.connector.label,

@@ -307,6 +307,11 @@ model Vehicle {
   batteryCapacityKwh Decimal     @map("battery_capacity_kwh") @db.Decimal(6, 2)
   maxDcPowerKw       Decimal?    @map("max_dc_power_kw") @db.Decimal(6, 2)
   maxAcPowerKw       Decimal?    @map("max_ac_power_kw") @db.Decimal(6, 2)
+  /// Manufacturer-published full-charge driving range (e.g. ARAI/WLTP), km.
+  /// Nullable — never fabricated for a vehicle whose real figure isn't on
+  /// record; powers the charging calculator's optional km estimate only
+  /// when present. See prisma/seed-vehicles.ts.
+  fullRangeKm Decimal? @map("full_range_km") @db.Decimal(6, 1)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

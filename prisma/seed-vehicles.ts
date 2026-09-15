@@ -40,6 +40,13 @@ export type VehicleSeed = {
   batteryCapacityKwh: number;
   maxDcPowerKw: number | null;
   maxAcPowerKw: number | null;
+  /**
+   * Manufacturer-published full-charge range (ARAI-certified, India-spec —
+   * the same vehicles/specs sold in Nepal), km. Sourced from each
+   * manufacturer's official certification, not estimated. See
+   * docs/data-model.md's Vehicle section for the source per model.
+   */
+  fullRangeKm: number | null;
   /** Canonical Connector.code — must already exist (see seedConnectors() in prisma/seed.ts). */
   connectorCode: string;
 };
@@ -52,6 +59,7 @@ export const VEHICLE_CATALOG: VehicleSeed[] = [
     batteryCapacityKwh: 40.5,
     maxDcPowerKw: 50,
     maxAcPowerKw: 7.2,
+    fullRangeKm: 437,
     connectorCode: "CCS2",
   },
   {
@@ -61,6 +69,7 @@ export const VEHICLE_CATALOG: VehicleSeed[] = [
     batteryCapacityKwh: 24,
     maxDcPowerKw: 25,
     maxAcPowerKw: 3.3,
+    fullRangeKm: 285,
     connectorCode: "CCS2",
   },
   {
@@ -70,6 +79,7 @@ export const VEHICLE_CATALOG: VehicleSeed[] = [
     batteryCapacityKwh: 39.2,
     maxDcPowerKw: 50,
     maxAcPowerKw: 7.2,
+    fullRangeKm: 452,
     connectorCode: "CCS2",
   },
   {
@@ -79,6 +89,7 @@ export const VEHICLE_CATALOG: VehicleSeed[] = [
     batteryCapacityKwh: 50.3,
     maxDcPowerKw: 76.6,
     maxAcPowerKw: 7,
+    fullRangeKm: 461,
     connectorCode: "CCS2",
   },
   {
@@ -88,6 +99,7 @@ export const VEHICLE_CATALOG: VehicleSeed[] = [
     batteryCapacityKwh: 60.48,
     maxDcPowerKw: 80,
     maxAcPowerKw: 7,
+    fullRangeKm: 521,
     connectorCode: "CCS2",
   },
 ];
@@ -112,12 +124,14 @@ export async function seedVehicles(prisma: PrismaClient): Promise<number> {
         batteryCapacityKwh: v.batteryCapacityKwh,
         maxDcPowerKw: v.maxDcPowerKw,
         maxAcPowerKw: v.maxAcPowerKw,
+        fullRangeKm: v.fullRangeKm,
       },
       update: {
         vehicleType: v.vehicleType,
         batteryCapacityKwh: v.batteryCapacityKwh,
         maxDcPowerKw: v.maxDcPowerKw,
         maxAcPowerKw: v.maxAcPowerKw,
+        fullRangeKm: v.fullRangeKm,
       },
     });
 

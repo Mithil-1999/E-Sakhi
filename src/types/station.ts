@@ -58,6 +58,9 @@ export type StationListItem = {
   updatedAt: string;
 };
 
+/** GET /api/stations/nearby's per-item shape — a normal station plus the straight-line distance (km) from the queried point. */
+export type NearbyStationItem = StationListItem & { distanceKm: number };
+
 export type ApiListResponse<T> = {
   data: T[];
   meta: { page: number; pageSize: number; total: number; totalPages: number };

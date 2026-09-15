@@ -1,14 +1,15 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { Search, X, Zap } from "lucide-react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { Locate, MapPin, Search, X, Zap } from "lucide-react";
 import {
   calculateChargingEstimate,
   CHARGING_ESTIMATE_CAVEAT,
   type ChargingMode,
 } from "@/services/charging-calculator";
+import { Button } from "@/components/ui/Button";
 import type { VehicleListItem } from "@/types/vehicle";
-import type { ApiListResponse, ApiErrorResponse, StationListItem } from "@/types/station";
+import type { ApiListResponse, ApiErrorResponse, StationListItem, NearbyStationItem } from "@/types/station";
 
 const inputClass =
   "mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900";
@@ -61,6 +62,7 @@ export function ChargingCalculatorTool({ vehicles }: { vehicles: VehicleListItem
   const [batteryInput, setBatteryInput] = useState("");
   const [acInput, setAcInput] = useState("");
   const [dcInput, setDcInput] = useState("");
+  const [fullRangeInput, setFullRangeInput] = useState("");
   const [currentPercent, setCurrentPercent] = useState("20");
   const [targetPercent, setTargetPercent] = useState("80");
 
@@ -79,6 +81,13 @@ export function ChargingCalculatorTool({ vehicles }: { vehicles: VehicleListItem
   const [stationChargersOf, setStationChargersOf] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Nearest-station finder — same geolocation pattern as
+  // RecommendationTool.tsx, but a simple distance-only lookup
+  // (GET /api/stations/nearby) rather than full vehicle-aware ranking.
+  const [geoStatus, setGeoStatus] = useState<"idle" | "locating" | "denied" | "unsupported">("idle");
+  const [nearbyStations, setNearbyStations] = useState<NearbyStationItem[] | null>(null);
+  const [nearbyError, setNearbyError] = useState<string | null>(null);
+
   function applyVehiclePreset(id: string) {
     setSelectedVehicleId(id);
     if (id === CUSTOM_VEHICLE_ID) return;
@@ -87,7 +96,41 @@ export function ChargingCalculatorTool({ vehicles }: { vehicles: VehicleListItem
     setBatteryInput(String(vehicle.batteryCapacityKwh));
     setAcInput(vehicle.maxAcPowerKw !== null ? String(vehicle.maxAcPowerKw) : "");
     setDcInput(vehicle.maxDcPowerKw !== null ? String(vehicle.maxDcPowerKw) : "");
+    setFullRangeInput(vehicle.fullRangeKm !== null ? String(vehicle.fullRangeKm) : "");
   }
+
+  const handleFindNearby = useCallback(() => {
+    if (!("geolocation" in navigator)) {
+      setGeoStatus("unsupported");
+      return;
+    }
+    setGeoStatus("locating");
+    setNearbyError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        setGeoStatus("idle");
+        try {
+          const params = new URLSearchParams({
+            latitude: String(position.coords.latitude),
+            longitude: String(position.coords.longitude),
+            limit: "5",
+          });
+          const res = await fetch(`/api/stations/nearby?${params.toString()}`);
+          if (!res.ok) {
+            const body = (await res.json()) as ApiErrorResponse;
+            throw new Error(body.error?.message ?? "Could not find nearby stations.");
+          }
+          const body = (await res.json()) as { data: NearbyStationItem[] };
+          setNearbyStations(body.data);
+        } catch (error) {
+          setNearbyStations(null);
+          setNearbyError(error instanceof Error ? error.message : "Could not find nearby stations.");
+        }
+      },
+      () => setGeoStatus("denied"),
+      { enableHighAccuracy: false, timeout: 10_000 }
+    );
+  }, []);
 
   // Debounced, event-driven (never inside a useEffect) real-station search —
   // reuses GET /api/stations, same endpoint as /stations and /map.
@@ -155,6 +198,7 @@ export function ChargingCalculatorTool({ vehicles }: { vehicles: VehicleListItem
         batteryCapacityKwh: Number(batteryInput.trim()),
         maxAcPowerKw: parseOptionalNumber(acInput),
         maxDcPowerKw: parseOptionalNumber(dcInput),
+        fullRangeKm: parseOptionalNumber(fullRangeInput),
       },
       charger: {
         chargingMode: chargerMode,
@@ -163,7 +207,16 @@ export function ChargingCalculatorTool({ vehicles }: { vehicles: VehicleListItem
       currentPercent: Number(currentPercent.trim()),
       targetPercent: Number(targetPercent.trim()),
     });
-  }, [batteryInput, acInput, dcInput, chargerMode, chargerPowerInput, currentPercent, targetPercent]);
+  }, [
+    batteryInput,
+    acInput,
+    dcInput,
+    fullRangeInput,
+    chargerMode,
+    chargerPowerInput,
+    currentPercent,
+    targetPercent,
+  ]);
 
   const errorFor = (field: string) =>
     !result.ok ? result.errors.find((e) => e.field === field)?.message : undefined;
@@ -197,7 +250,7 @@ export function ChargingCalculatorTool({ vehicles }: { vehicles: VehicleListItem
             &quot;Custom vehicle&quot; and enter its real specs below.
           </p>
 
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <label htmlFor="battery-kwh" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
                 Battery capacity (kWh)
@@ -254,6 +307,27 @@ export function ChargingCalculatorTool({ vehicles }: { vehicles: VehicleListItem
                 className={inputClass}
                 placeholder="Unknown"
               />
+            </div>
+            <div>
+              <label htmlFor="full-range" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+                Full range (km)
+              </label>
+              <input
+                id="full-range"
+                type="number"
+                min="0"
+                step="1"
+                value={fullRangeInput}
+                onChange={(e) => {
+                  setSelectedVehicleId(CUSTOM_VEHICLE_ID);
+                  setFullRangeInput(e.target.value);
+                }}
+                className={inputClass}
+                placeholder="Unknown"
+              />
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Optional — manufacturer-published full-charge range. Adds a km estimate below.
+              </p>
             </div>
           </div>
 
@@ -436,6 +510,64 @@ export function ChargingCalculatorTool({ vehicles }: { vehicles: VehicleListItem
             </div>
           </div>
         </section>
+
+        {/* Nearest station */}
+        <section className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Nearest station</h2>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Find the closest stations to your current location — straight-line distance, using
+            stations with a confirmed map location only.
+          </p>
+          <Button type="button" variant="outline" className="mt-3 w-full" onClick={handleFindNearby}>
+            <Locate className="h-4 w-4" aria-hidden="true" />
+            {geoStatus === "locating" ? "Locating…" : "Find stations near me"}
+          </Button>
+          {geoStatus === "denied" && (
+            <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+              Location permission was denied — allow location access to use this.
+            </p>
+          )}
+          {geoStatus === "unsupported" && (
+            <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+              Your browser doesn&apos;t support location detection.
+            </p>
+          )}
+          {nearbyError && (
+            <p className="mt-2 text-xs text-red-600 dark:text-red-400">{nearbyError}</p>
+          )}
+          {nearbyStations && nearbyStations.length === 0 && (
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              No station with a confirmed location was found.
+            </p>
+          )}
+          {nearbyStations && nearbyStations.length > 0 && (
+            <ul className="mt-3 space-y-2">
+              {nearbyStations.map((station) => (
+                <li key={station.id}>
+                  <a
+                    href={`/stations/${station.id}`}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm hover:border-emerald-400 hover:bg-emerald-50 dark:border-slate-700 dark:hover:bg-emerald-900/20"
+                  >
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <MapPin className="h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
+                      <span className="truncate">
+                        <span className="font-medium text-slate-900 dark:text-white">
+                          {station.stationName}
+                        </span>
+                        <span className="ml-1 text-slate-500 dark:text-slate-400">
+                          — {station.city}, {station.district}
+                        </span>
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-xs font-medium text-slate-600 dark:text-slate-400">
+                      {station.distanceKm} km
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
 
       {/* Result */}
@@ -458,6 +590,40 @@ export function ChargingCalculatorTool({ vehicles }: { vehicles: VehicleListItem
                   {result.data.energyRequiredKwh} kWh
                 </p>
               </div>
+
+              {result.data.range ? (
+                <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+                  <p className="text-xs font-medium text-slate-700 dark:text-slate-200">Estimated range</p>
+                  <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+                    <div>
+                      <p className="text-lg font-bold text-slate-900 dark:text-white">
+                        {result.data.range.currentRangeKm} km
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Now</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                        +{result.data.range.rangeAddedKm} km
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Added</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-slate-900 dark:text-white">
+                        {result.data.range.targetRangeKm} km
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">At target</p>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+                    Based on this vehicle&apos;s manufacturer-published full-charge range — real range
+                    varies with driving style, terrain, and climate control use.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Add this vehicle&apos;s full-charge range (km) above to also see a km estimate.
+                </p>
+              )}
 
               {result.data.note ? (
                 <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">

@@ -17,5 +17,7 @@ export type VehicleListItem = {
   batteryCapacityKwh: number;
   maxDcPowerKw: number | null;
   maxAcPowerKw: number | null;
+  /** Manufacturer-published full-charge range, km — null if not on record. */
+  fullRangeKm: number | null;
   connectors: VehicleConnectorRef[];
 };

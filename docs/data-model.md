@@ -200,6 +200,7 @@ vehicle_type           VehicleType
 battery_capacity_kwh    Decimal
 max_dc_power_kw          Decimal, nullable
 max_ac_power_kw           Decimal, nullable
+full_range_km            Decimal, nullable  -- manufacturer-published full-charge range; see §9
 created_at
 updated_at
 ```
@@ -361,6 +362,8 @@ Result: **459 stations import as `ASSUMED`, 1 (`EVNP-0448`) as `NEEDS_REVIEW`, 0
 **What's seeded and why it's small:** five electric cars actually sold in Nepal (Tata Nexon EV Max, Tata Tiago EV, Hyundai Kona Electric, MG ZS EV, BYD Atto 3), each with battery capacity and max AC/DC charging power from publicly published manufacturer specs, and a `CCS2` connector link (all five use it). This is reference/catalog data, not a claim of field verification — `Vehicle` has no `verification_status` field the way `Station` does, because "what a manufacturer publishes about a model" is a different kind of fact than "what this app has confirmed about one physical station."
 
 **Deliberately no scooters or motorcycles**, even though `VehicleType` supports them and Nepal's EV market is arguably more two-wheeler than car: most consumer electric scooters charge from a proprietary wall-plug charger, not a `Connector` this app's stations actually offer (`CCS2`/`GB/T`/`Type 2`/`CHAdeMO`), and this project doesn't have a confident source for per-model power/connector figures for the two-wheelers actually imported into Nepal. Rather than guess — the same rule that originally kept `Station.latitude` `NULL` instead of invented (§10 below covers how that specific gap was later closed, honestly) — that gap is left honest. Anyone using the calculator for a scooter, a motorcycle, or a car not in the five-vehicle catalog uses its manual-entry path instead (real numbers the visitor supplies for their own vehicle), which every part of the calculator supports identically to a catalog pick. See `src/components/features/ChargingCalculatorTool.tsx`.
+
+**`full_range_km` (added later, same file)** — each of the five catalog vehicles' manufacturer-published, officially certified full-charge driving range (ARAI-certified, India-spec — the same specs as the vehicles sold in Nepal): Tata Nexon EV Max 437 km, Tata Tiago EV (Medium Range/24 kWh pack) 285 km, Hyundai Kona Electric 452 km, MG ZS EV 461 km, BYD Atto 3 (60.48 kWh pack) 521 km. Nullable, same "never fabricate" rule as everything else here — a vehicle without a confident published figure simply has `full_range_km = NULL` rather than an estimate. `src/services/charging-calculator.ts`'s `calculateChargingEstimate()` uses it (when present, catalog or manually entered) to turn the current/target battery % into an honest, linearly-scaled km estimate alongside the existing kWh/time estimate — never computed from battery capacity alone, since that would require inventing an efficiency figure this project has no source for.
 
 ---
 

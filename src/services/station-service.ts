@@ -5,6 +5,7 @@ import { decimalToNumber } from "@/lib/db/serialize";
 import { buildPaginationMeta } from "@/lib/validation/pagination";
 import { findPowerBucket } from "@/lib/config/power-buckets";
 import { SELECTABLE_CONNECTORS } from "@/services/connector-service";
+import { haversineDistanceKm, type LatLng } from "@/lib/geo/distance";
 import type {
   StationListQuery,
   StationCreateInput,
@@ -261,6 +262,58 @@ export async function getPublicStats(): Promise<PublicStats> {
     districtCount: districts.filter((d) => d.district.trim().length > 0).length,
     connectorTypeCount,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Nearest stations (Charging Calculator's "find a nearby station")
+// ---------------------------------------------------------------------------
+
+export type NearbyStation = ReturnType<typeof toStationListItem> & { distanceKm: number };
+
+/**
+ * The nearest `limit` stations to a point, straight-line distance. Only
+ * stations with a real, confirmed latitude/longitude are ever considered —
+ * a station with no coordinate is silently excluded rather than assigned a
+ * guessed distance (same "never invent a location" rule as the map, see
+ * docs/architecture.md §6). Two queries: a lightweight one over every
+ * coordinate-bearing station to rank by distance, then a second fetching
+ * full display data (operator, chargers) for just the top matches — avoids
+ * pulling every station's full include just to throw most of it away.
+ */
+export async function getNearestStations(
+  origin: LatLng,
+  limit: number
+): Promise<NearbyStation[]> {
+  const candidates = await prisma.station.findMany({
+    where: { isDeleted: false, latitude: { not: null }, longitude: { not: null } },
+    select: { id: true, latitude: true, longitude: true },
+  });
+
+  const ranked = candidates
+    .map((s) => ({
+      id: s.id,
+      distanceKm: haversineDistanceKm(origin, {
+        latitude: decimalToNumber(s.latitude) as number,
+        longitude: decimalToNumber(s.longitude) as number,
+      }),
+    }))
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .slice(0, limit);
+
+  if (ranked.length === 0) return [];
+
+  const distanceById = new Map(ranked.map((r) => [r.id, r.distanceKm]));
+  const stations = await prisma.station.findMany({
+    where: { id: { in: ranked.map((r) => r.id) } },
+    include: stationListInclude,
+  });
+
+  return stations
+    .map((station) => ({
+      ...toStationListItem(station),
+      distanceKm: Math.round((distanceById.get(station.id) as number) * 10) / 10,
+    }))
+    .sort((a, b) => a.distanceKm - b.distanceKm);
 }
 
 // ---------------------------------------------------------------------------

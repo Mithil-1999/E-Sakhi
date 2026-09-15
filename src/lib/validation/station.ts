@@ -54,6 +54,15 @@ export const StationListQuerySchema = PaginationQuerySchema.extend({
 
 export type StationListQuery = z.infer<typeof StationListQuerySchema>;
 
+/** Query for GET /api/stations/nearby — see getNearestStations() in station-service.ts. */
+export const StationNearbyQuerySchema = z.object({
+  latitude: z.coerce.number().min(-90).max(90),
+  longitude: z.coerce.number().min(-180).max(180),
+  limit: z.coerce.number().int().min(1).max(20).default(5),
+});
+
+export type StationNearbyQuery = z.infer<typeof StationNearbyQuerySchema>;
+
 const latitudeSchema = z.coerce.number().min(-90).max(90).nullable().optional();
 const longitudeSchema = z.coerce.number().min(-180).max(180).nullable().optional();
 
