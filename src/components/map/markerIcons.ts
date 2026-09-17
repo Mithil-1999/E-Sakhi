@@ -13,6 +13,8 @@ const ZAP_PATH =
 
 const EMERALD = "#059669";
 const BLUE = "#2563eb";
+const AMBER = "#d97706";
+const SLATE = "#334155";
 
 let stationIcon: L.DivIcon | null = null;
 
@@ -41,6 +43,61 @@ export function getUserPositionIcon(): L.DivIcon {
     iconAnchor: [8, 8],
   });
   return userIcon;
+}
+
+const START_PATH =
+  "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1112 6.5a2.5 2.5 0 010 5z";
+const FLAG_PATH = "M5 3v18h2v-7h10l-2-4 2-4H7V3H5z";
+
+let startIcon: L.DivIcon | null = null;
+
+/** E Sakhi Marg — the journey's starting point. */
+export function getMargStartIcon(): L.DivIcon {
+  startIcon ??= L.divIcon({
+    className: "e-sakhi-marg-start-marker",
+    html: `<div style="width:32px;height:32px;border-radius:9999px;background:${BLUE};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="${START_PATH}"/></svg>
+    </div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -16],
+  });
+  return startIcon;
+}
+
+const checkpointIconCache = new Map<number, L.DivIcon>();
+
+/** E Sakhi Marg — a numbered charging checkpoint along the route. */
+export function getMargCheckpointIcon(index: number): L.DivIcon {
+  const cached = checkpointIconCache.get(index);
+  if (cached) return cached;
+  const icon = L.divIcon({
+    className: "e-sakhi-marg-checkpoint-marker",
+    html: `<div style="width:30px;height:30px;border-radius:9999px;background:${AMBER};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-family:inherit;font-size:13px;">
+      ${index + 1}
+    </div>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+    popupAnchor: [0, -15],
+  });
+  checkpointIconCache.set(index, icon);
+  return icon;
+}
+
+let destinationIcon: L.DivIcon | null = null;
+
+/** E Sakhi Marg — the journey's destination. */
+export function getMargDestinationIcon(): L.DivIcon {
+  destinationIcon ??= L.divIcon({
+    className: "e-sakhi-marg-destination-marker",
+    html: `<div style="width:32px;height:32px;border-radius:9999px;background:${SLATE};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="${FLAG_PATH}"/></svg>
+    </div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -16],
+  });
+  return destinationIcon;
 }
 
 /** Cluster bubble — count badge in the same brand color as the station marker. */

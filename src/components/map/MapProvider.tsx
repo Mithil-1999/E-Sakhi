@@ -5,9 +5,16 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
 import { useEffect, type ReactNode } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
-import { getStationIcon, getUserPositionIcon, createClusterIcon } from "@/components/map/markerIcons";
+import {
+  getStationIcon,
+  getUserPositionIcon,
+  createClusterIcon,
+  getMargStartIcon,
+  getMargCheckpointIcon,
+  getMargDestinationIcon,
+} from "@/components/map/markerIcons";
 
 /**
  * E Sakhi's map wrapper — see docs/architecture.md §6. This is the ONLY
@@ -34,9 +41,26 @@ export type StationMapMarker = {
   popup: ReactNode;
 };
 
-export type FlyToTarget = {
+export type FlyToTarget =
+  | { position: [number, number]; zoom?: number; bounds?: undefined }
+  /** Fits the whole route/area in view at once (e.g. an E Sakhi Marg journey's full start→destination extent) rather than centering on one point. */
+  | { bounds: [[number, number], [number, number]]; position?: undefined; zoom?: undefined };
+
+/**
+ * A single stop on an E Sakhi Marg journey — the start, a numbered
+ * charging checkpoint, or the destination, each rendered with its own
+ * distinct icon (see markerIcons.ts) rather than the standard clustered
+ * station marker. Deliberately a separate prop from `markers` (never
+ * mixed into the same `MarkerClusterGroup`) since a route's few stops
+ * should never cluster together or with unrelated station pins.
+ */
+export type MargMapMarker = {
+  id: string;
+  kind: "start" | "checkpoint" | "destination";
+  /** 0-based position among checkpoints only — ignored for "start"/"destination". */
+  checkpointIndex?: number;
   position: [number, number];
-  zoom?: number;
+  popup: ReactNode;
 };
 
 export type StationMapProps = {
@@ -48,6 +72,11 @@ export type StationMapProps = {
   userPosition?: [number, number] | null;
   /** Set to pan/zoom the map imperatively (e.g. "use my location", "reset view"). */
   flyTo?: FlyToTarget | null;
+  /** E Sakhi Marg's start/checkpoint/destination stops — see MargMapMarker. */
+  margMarkers?: MargMapMarker[];
+  /** E Sakhi Marg's computed driving route, real road-following geometry — never a straight line. */
+  margRoute?: [number, number][] | null;
+  onMargMarkerClick?: (id: string) => void;
   className?: string;
 };
 
@@ -57,7 +86,11 @@ function FlyToController({ target }: { target: FlyToTarget | null | undefined })
 
   useEffect(() => {
     if (!target) return;
-    map.flyTo(target.position, target.zoom ?? map.getZoom(), { duration: 0.75 });
+    if (target.bounds) {
+      map.flyToBounds(target.bounds, { padding: [40, 40], duration: 0.75 });
+    } else {
+      map.flyTo(target.position, target.zoom ?? map.getZoom(), { duration: 0.75 });
+    }
   }, [target, map]);
 
   return null;
@@ -70,6 +103,9 @@ export function StationMap({
   onMarkerClick,
   userPosition,
   flyTo,
+  margMarkers,
+  margRoute,
+  onMargMarkerClick,
   className,
 }: StationMapProps) {
   const stationIcon = getStationIcon();
@@ -108,6 +144,29 @@ export function StationMap({
       </MarkerClusterGroup>
 
       {userPosition && <Marker position={userPosition} icon={getUserPositionIcon()} />}
+
+      {margRoute && margRoute.length > 1 && (
+        <Polyline positions={margRoute} pathOptions={{ color: "#059669", weight: 4, opacity: 0.85 }} />
+      )}
+
+      {margMarkers?.map((marker) => (
+        <Marker
+          key={marker.id}
+          position={marker.position}
+          icon={
+            marker.kind === "start"
+              ? getMargStartIcon()
+              : marker.kind === "destination"
+                ? getMargDestinationIcon()
+                : getMargCheckpointIcon(marker.checkpointIndex ?? 0)
+          }
+          eventHandlers={onMargMarkerClick ? { click: () => onMargMarkerClick(marker.id) } : undefined}
+        >
+          <Popup autoPanPaddingTopLeft={[20, 130]} autoPanPaddingBottomRight={[20, 20]}>
+            {marker.popup}
+          </Popup>
+        </Marker>
+      ))}
     </MapContainer>
   );
 }

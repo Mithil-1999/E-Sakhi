@@ -4,7 +4,7 @@
 
 E Sakhi is a smart Electric Vehicle (EV) charging-station discovery and recommendation platform focused primarily on Nepal. It helps EV drivers find charging stations, understand which chargers actually fit their vehicle, estimate charging time, and get station recommendations that account for compatibility, distance, power, availability, rating, and how well-verified the station's data actually is.
 
-> **Status:** feature-complete through Part 16 (final testing, security review, polish — the last planned part). The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle/favorites API, an interactive Nepal map, a full search/filter station list, station detail pages, a charging calculator, multi-factor station recommendations, real per-user favorites (`/dashboard`, `/my-favorites`), a live admin overview (`/admin`), real admin station/charger management (`/admin/stations`), a dedicated verification workflow (`/admin/verification`), a diff/approve Excel re-import tool (`/admin/import`), real reviews and a report-triage queue (`/admin/reports`) are all live. See [Development Roadmap](#development-roadmap) for the full build history.
+> **Status:** feature-complete through Part 16 (final testing, security review, polish — the last planned part), plus a later E Sakhi Marg addendum. The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle/favorites API, an interactive Nepal map, a full search/filter station list, station detail pages, a charging calculator, multi-factor station recommendations, an EV journey/route planner (`/marg`), real per-user favorites (`/dashboard`, `/my-favorites`), a live admin overview (`/admin`), real admin station/charger management (`/admin/stations`), a dedicated verification workflow (`/admin/verification`), a diff/approve Excel re-import tool (`/admin/import`), real reviews and a report-triage queue (`/admin/reports`) are all live. See [Development Roadmap](#development-roadmap) for the full build history.
 
 ---
 
@@ -18,6 +18,7 @@ Nepal's EV charging landscape is growing quickly and unevenly documented — sta
 - Station detail pages: chargers, connectors, power, operator, contact, verification status, reviews.
 - A charging calculator: pick a vehicle, enter current and target battery %, get the energy required and an estimated charging time.
 - A recommendation engine that ranks stations by compatibility, distance, effective charging power, availability (when known), rating, and data verification quality — not just "nearest station."
+- E Sakhi Marg: an EV journey planner — enter a starting point and destination and get a real driving route with charging checkpoints along the way, not just the single nearest charger.
 - User accounts: favorites, reviews, and the ability to report incorrect station information.
 - Admin tools: station/charger/operator management, data verification workflow, an Excel import pipeline with conflict detection, and report moderation.
 
@@ -194,6 +195,8 @@ All station data is served from the database through these endpoints — nothing
 | `DELETE /api/stations/[id]/reviews` | Signed-in | Deletes the caller's own review for this station. Idempotent. |
 | `POST /api/stations/[id]/reports` | Signed-in | Body `{ reportType, description? }`. Creates a "Report Incorrect Information" submission for admin triage. |
 | `PATCH /api/reports/[id]` | `ADMIN` | Body `{ status }`. Moves a report between `PENDING`/`REVIEWING`/`RESOLVED`/`REJECTED`; used by the `/admin/reports` triage queue. |
+| `GET /api/marg/geocode` | Public | Query `q` (min 2 chars). Place-name search (OpenStreetMap Nominatim) for E Sakhi Marg's Starting Point/Destination fields. |
+| `POST /api/marg/plan` | Public | Body `{ startLabel, startLatitude, startLongitude, destLabel, destLatitude, destLongitude, connector, chargingMode? }`. Plans a real driving route (OSRM) with real charging-station checkpoints along it. `404` with a plain-language message if no route or no compatible station exists — see the E Sakhi Marg section below. |
 
 ### Testing the API
 
@@ -232,6 +235,18 @@ Try it: [`/stations?province=Bagmati`](http://localhost:3000/stations?province=B
 - **Estimate** — energy required is always computable from battery capacity alone; a time estimate is only shown when both the vehicle's max power for that charging mode *and* the charger's power rating are on record — otherwise the gap is stated plainly instead of guessing. Every estimate carries a caveat: it assumes constant charging power, while real charging (especially DC fast charging) typically tapers above ~80%.
 
 `GET /api/vehicles` (public, optional `vehicleType` filter) serves the same catalog the calculator uses.
+
+### E Sakhi Marg — EV Journey Planner
+
+`/marg` ("marg" = route/journey/path) plans a whole start→destination journey, not just "the nearest charger" — a new, separate feature from the "Find Chargers" search at `/stations`, which it leaves completely untouched (same nav bar, both reachable side by side). Given a starting point, destination, connector type, and charging mode, it returns a real driving route with real charging-station checkpoints along the way:
+
+- **Route** — computed by `src/services/marg-service.ts` via a real driving-route lookup (`src/lib/geo/osrm.ts`, OSRM's public routing API — actual road-following geometry and distance, never a straight line). No API key needed; documented there as the one place to swap in a paid routing provider later.
+- **Place search** — `GET /api/marg/geocode?q=` proxies OpenStreetMap's Nominatim (server-side, for its required User-Agent header) so a visitor can type "Kathmandu"/"Pokhara"/any Nepali place name for Starting Point/Destination, or use their browser location for the start.
+- **Checkpoints** — real `Station` rows only, never invented: candidates are filtered to ACTIVE stations with a confirmed coordinate and a real, non-deleted charger matching the selected connector and charging mode, then kept only if they sit within 8 km of the route's own path (a "route detour" is shown honestly when non-zero). A handful are chosen, spaced along the route (skipped entirely for a short trip that doesn't need one), with real road-distance segments between each point and the total. Availability is shown honestly per checkpoint — `Status unavailable` rather than a guess, exactly like everywhere else in this app, whenever no real-time source is on record.
+- **No route or no compatible station** are both reported in plain language (`GET .../plan` returns `404` with a human-readable message), never papered over with a placeholder result.
+- **Battery-aware planning** (current %, estimated range, minimum arrival %) is intentionally not required input yet — `MargPlanInput`/`MargCheckpoint` (`src/types/marg.ts`) are shaped so that upgrade doesn't need a redesign, only new optional fields and a reachability check layered onto the same checkpoint list.
+
+`POST /api/marg/plan` (public, body: start/destination coordinates+labels, `connector`, optional `chargingMode`) does the actual planning; `GET /api/marg/geocode?q=` powers the two search fields.
 
 ### Recommendations
 
