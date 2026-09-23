@@ -249,13 +249,14 @@ The public `/stations` search/filter list ("Find Chargers") — a fully server-r
 
 ### Recommendations
 
-`/recommendations` ranks real, compatible stations for a vehicle — not just the nearest one. Full model locked in [docs/recommendation-engine.md](docs/recommendation-engine.md); in brief:
+`/recommendations` finds real, compatible stations within a range the visitor chooses, nearest first — not a weighted score. Rewritten from the original five-factor model (Rating and Verified are gone entirely — no percentage/score anywhere); full current model locked in [docs/recommendation-engine.md](docs/recommendation-engine.md); in brief:
 
-1. **Hard eligibility first**: a station is excluded outright (not scored low) unless it has a non-deleted charger whose connector matches the vehicle, isn't confirmed unavailable, and the station itself isn't confirmed inactive.
-2. **Weighted scoring second**, over five factors (power/distance/rating/verification/availability) via one config object (`src/lib/config/recommendation-weights.ts`) — an unknown value always scores neutral-low, never as if it were good data.
-3. **Honest about today's data**: every one of the 460 seeded stations has `NULL` coordinates and there are no reviews yet, so distance/rating (and, per `docs/data-model.md §7`, availability) can't meaningfully differentiate results today — the summary banner on `/recommendations` states that with live counts (never a hard-coded claim), and compatibility + charging speed (reusing `getEffectiveChargingPowerKw()` from the Part 08 calculator) end up doing most of the ranking work until more data exists.
+1. **Location and a search range (km) are both required** — the visitor sets their own range (no hard-coded presets), and every result is guaranteed to be within it.
+2. **Hard compatibility filter**: a station is excluded outright unless it has a non-deleted charger whose connector matches the vehicle, isn't confirmed unavailable, and the station itself isn't confirmed inactive or missing a real coordinate.
+3. **Sorted by real distance only** (`src/lib/geo/distance.ts`'s haversine), nearest first — no other criterion affects the order.
+4. **Availability is a fixed 06:00–20:00 (Nepal time) Open/Closed label** (`src/lib/time/operating-hours.ts`), clearly not real-time charger status — this project has no live telemetry source, so it's labeled for exactly what it is.
 
-`GET /api/recommendations` (public, `vehicleId` *or* manual `connector`/`maxAcPowerKw`/`maxDcPowerKw`, optional `latitude`/`longitude`) returns each result's full per-factor breakdown, not just a bare score.
+`GET /api/recommendations` (public, requires `vehicleId` *or* manual `connector`/`maxAcPowerKw`/`maxDcPowerKw`, plus `latitude`, `longitude`, and `rangeKm`) returns every compatible station within range with its real distance, power, and Open/Closed label — no score, no rating, no verification field.
 
 ### Dashboard & Favorites
 

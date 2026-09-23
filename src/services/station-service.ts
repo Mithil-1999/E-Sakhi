@@ -185,36 +185,6 @@ async function getStationRating(stationId: string): Promise<StationRating> {
   };
 }
 
-/**
- * Batched version of getStationRating() for callers that need ratings for
- * many stations at once (the recommendation engine, Part 09) — one
- * `groupBy` instead of one `aggregate` per station. Same "always computed
- * fresh from Review rows" rule; a station with no rows just isn't a key in
- * the returned map (callers treat a missing entry as { average: null,
- * count: 0 }).
- */
-export async function getStationRatingsBatch(
-  stationIds: string[]
-): Promise<Map<string, StationRating>> {
-  if (stationIds.length === 0) return new Map();
-
-  const groups = await prisma.review.groupBy({
-    by: ["stationId"],
-    where: { stationId: { in: stationIds } },
-    _avg: { rating: true },
-    _count: { rating: true },
-  });
-
-  const byStationId = new Map<string, StationRating>();
-  for (const group of groups) {
-    byStationId.set(group.stationId, {
-      average: group._avg.rating !== null ? Math.round(group._avg.rating * 10) / 10 : null,
-      count: group._count.rating,
-    });
-  }
-  return byStationId;
-}
-
 // ---------------------------------------------------------------------------
 // Public homepage stats
 // ---------------------------------------------------------------------------

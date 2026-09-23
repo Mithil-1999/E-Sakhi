@@ -5,20 +5,16 @@
  * src/types/station.ts for the same pattern.
  */
 
-import type { VerificationStatus, StationStatus } from "@/types/station";
+import type { StationStatus } from "@/types/station";
 
-export type PowerFactor = {
-  score: number;
+export type PowerInfo = {
   effectivePowerKw: number | null;
-  chargerId: string | null;
   connectors: { code: string; label: string }[];
   limitingFactor: "vehicle" | "charger" | null;
 };
 
-export type DistanceFactor = { score: number; distanceKm: number | null };
-export type RatingFactor = { score: number; average: number | null; count: number };
-export type VerificationFactor = { score: number; status: VerificationStatus };
-export type AvailabilityFactor = { score: number; status: "AVAILABLE" | "BUSY" | "UNKNOWN" };
+/** Fixed-operating-hours label (06:00–20:00, Nepal time) — never real-time charger availability. */
+export type StationOperatingStatus = "OPEN" | "CLOSED";
 
 export type RecommendedStation = {
   id: string;
@@ -28,25 +24,19 @@ export type RecommendedStation = {
   district: string;
   city: string;
   status: StationStatus;
-  verificationStatus: VerificationStatus;
-  latitude: number | null;
-  longitude: number | null;
-  score: number;
-  factors: {
-    power: PowerFactor;
-    distance: DistanceFactor;
-    rating: RatingFactor;
-    verification: VerificationFactor;
-    availability: AvailabilityFactor;
-  };
+  latitude: number;
+  longitude: number;
+  distanceKm: number;
+  power: PowerInfo;
+  availability: StationOperatingStatus;
 };
 
 export type RecommendationMeta = {
   stationsConsidered: number;
-  stationsEligible: number;
-  stationsWithKnownDistance: number;
-  stationsWithKnownRating: number;
-  stationsWithKnownAvailability: number;
+  stationsCompatible: number;
+  stationsWithinRange: number;
+  rangeKm: number;
+  availability: StationOperatingStatus;
 };
 
 export type RecommendationApiResponse = {

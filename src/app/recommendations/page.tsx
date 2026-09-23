@@ -20,13 +20,13 @@ export default async function RecommendationsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Recommended Stations</h1>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          Ranked by whether a station can actually charge your vehicle, how fast, how close, its
-          rating, and how well-verified its data is — not just distance. See{" "}
+          Set your vehicle, your location, and how far you&apos;re willing to travel — E Sakhi finds
+          every compatible station within that range and lists them nearest first. See{" "}
           <Link
             href="https://github.com/Mithil-1999/E-Sakhi/blob/main/docs/recommendation-engine.md"
             className="text-emerald-600 hover:underline dark:text-emerald-400"
           >
-            how this ranking works
+            how this works
           </Link>
           .
         </p>

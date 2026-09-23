@@ -3,13 +3,8 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { decimalToNumber } from "@/lib/db/serialize";
 import { haversineDistanceKm, type LatLng } from "@/lib/geo/distance";
-import {
-  RECOMMENDATION_WEIGHTS,
-  UNKNOWN_FACTOR_SCORE,
-  DISTANCE_DECAY_KM,
-} from "@/lib/config/recommendation-weights";
+import { getStationOperatingStatus, type StationOperatingStatus } from "@/lib/time/operating-hours";
 import { CANONICAL_CONNECTORS } from "@/services/connector-service";
-import { getStationRatingsBatch, type StationRating } from "@/services/station-service";
 import {
   getEffectiveChargingPowerKw,
   type VehiclePowerProfile,
@@ -17,31 +12,18 @@ import {
 import type { RecommendationQuery } from "@/lib/validation/recommendation";
 
 /**
- * Station recommendation ranking — see docs/recommendation-engine.md for
- * the full, locked-before-implementation model this file implements
- * exactly. Two stages: hard eligibility filters, then a fixed weighted
- * score over five factors. No ML, no persistence, no per-user history —
- * a pure read computed fresh from the live database on every call.
+ * Station recommendation — a range-and-distance-first model (rewritten
+ * from the original five-factor weighted-score design; see
+ * docs/recommendation-engine.md for the current, locked model). No
+ * rating, no verification status, and no computed "score"/percentage
+ * anywhere in this file — distance is the only ordering criterion, after
+ * two hard filters (vehicle/connector compatibility, and the user's own
+ * search range). No ML, no persistence, no per-user history — a pure
+ * read computed fresh from the live database on every call.
  */
 
 // ---------------------------------------------------------------------------
-// Verification -> score mapping (docs/recommendation-engine.md §3.4)
-// ---------------------------------------------------------------------------
-
-const VERIFICATION_SCORES = {
-  VERIFIED: 1,
-  PARTIALLY_VERIFIED: 0.7,
-  NEEDS_REVIEW: 0.3,
-  ASSUMED: UNKNOWN_FACTOR_SCORE,
-  UNVERIFIED: UNKNOWN_FACTOR_SCORE,
-  UNKNOWN: UNKNOWN_FACTOR_SCORE,
-} as const;
-
-// ---------------------------------------------------------------------------
-// Prisma shape — deliberately its own include (not station-service.ts's
-// stationListInclude), because this needs charger `id`/`availability` that
-// the list view doesn't select, and doesn't need the fuller detail-page
-// include either.
+// Prisma shape
 // ---------------------------------------------------------------------------
 
 const recommendationStationInclude = {
@@ -65,33 +47,10 @@ type ChargerRow = StationRow["chargers"][number];
 // Output types
 // ---------------------------------------------------------------------------
 
-export type PowerFactor = {
-  score: number;
+export type PowerInfo = {
   effectivePowerKw: number | null;
-  chargerId: string | null;
   connectors: { code: string; label: string }[];
   limitingFactor: "vehicle" | "charger" | null;
-};
-
-export type DistanceFactor = {
-  score: number;
-  distanceKm: number | null;
-};
-
-export type RatingFactor = {
-  score: number;
-  average: number | null;
-  count: number;
-};
-
-export type VerificationFactor = {
-  score: number;
-  status: keyof typeof VERIFICATION_SCORES;
-};
-
-export type AvailabilityFactor = {
-  score: number;
-  status: "AVAILABLE" | "BUSY" | "UNKNOWN";
 };
 
 export type RecommendedStation = {
@@ -101,34 +60,38 @@ export type RecommendedStation = {
   province: string;
   district: string;
   city: string;
-  status: "ACTIVE" | "INACTIVE" | "UNKNOWN";
-  verificationStatus: keyof typeof VERIFICATION_SCORES;
-  latitude: number | null;
-  longitude: number | null;
-  score: number;
-  factors: {
-    power: PowerFactor;
-    distance: DistanceFactor;
-    rating: RatingFactor;
-    verification: VerificationFactor;
-    availability: AvailabilityFactor;
-  };
+  status: "ACTIVE" | "INACTIVE";
+  latitude: number;
+  longitude: number;
+  /** Real road-free-form distance (great-circle), km — the only ordering criterion. */
+  distanceKm: number;
+  power: PowerInfo;
+  /** Fixed-operating-hours label (06:00–20:00, Nepal time) — never real-time charger availability. See src/lib/time/operating-hours.ts. */
+  availability: StationOperatingStatus;
 };
 
 export type RecommendationMeta = {
   stationsConsidered: number;
-  stationsEligible: number;
-  stationsWithKnownDistance: number;
-  stationsWithKnownRating: number;
-  stationsWithKnownAvailability: number;
+  /** ACTIVE, with a real coordinate, and at least one real charger matching the requested connector/mode — before the range filter. */
+  stationsCompatible: number;
+  /** How many of those are within the user's requested range — equal to `data.length`. */
+  stationsWithinRange: number;
+  rangeKm: number;
+  /** The one current Open/Closed value applied to every result — see RecommendedStation.availability. */
+  availability: StationOperatingStatus;
 };
 
 export type RecommendationResult =
   | { ok: true; data: RecommendedStation[]; meta: RecommendationMeta }
   | { ok: false; error: string };
 
+// A safety cap, not a user-facing "top N" concept — the feature's own
+// intent is "show every suitable station within range," but an
+// unreasonably large range shouldn't return an unbounded list.
+const MAX_RESULTS = 100;
+
 // ---------------------------------------------------------------------------
-// Vehicle resolution (docs/recommendation-engine.md §4)
+// Vehicle resolution — unchanged from the original design
 // ---------------------------------------------------------------------------
 
 type ResolvedVehicle = VehiclePowerProfile & { connectorCodes: string[] };
@@ -173,14 +136,22 @@ async function resolveVehicle(
 }
 
 // ---------------------------------------------------------------------------
-// Per-factor scoring (docs/recommendation-engine.md §3)
+// Compatibility + power display (no scoring — just real facts to show)
 // ---------------------------------------------------------------------------
 
-function scorePower(vehicle: VehiclePowerProfile, eligibleChargers: ChargerRow[]): PowerFactor {
+function eligibleChargers(station: StationRow, vehicle: ResolvedVehicle): ChargerRow[] {
+  return station.chargers.filter(
+    (charger) =>
+      charger.availability !== "UNAVAILABLE" &&
+      charger.connectors.some((cc) => vehicle.connectorCodes.includes(cc.connector.code))
+  );
+}
+
+function describePower(vehicle: VehiclePowerProfile, chargers: ChargerRow[]): PowerInfo {
   let best: { effectivePowerKw: number; charger: ChargerRow; limitingFactor: "vehicle" | "charger" } | null =
     null;
 
-  for (const charger of eligibleChargers) {
+  for (const charger of chargers) {
     const effective = getEffectiveChargingPowerKw(vehicle, {
       chargingMode: charger.chargingMode,
       powerKw: decimalToNumber(charger.powerKw),
@@ -191,62 +162,16 @@ function scorePower(vehicle: VehiclePowerProfile, eligibleChargers: ChargerRow[]
   }
 
   if (!best) {
-    return {
-      score: UNKNOWN_FACTOR_SCORE,
-      effectivePowerKw: null,
-      chargerId: null,
-      connectors: [],
-      limitingFactor: null,
-    };
+    // Real chargers exist and match the connector — their power/mode just
+    // isn't on record. Never guessed; shown as "Unknown" by the caller.
+    return { effectivePowerKw: null, connectors: [], limitingFactor: null };
   }
 
-  // A non-null effective power always came from a known vehicle max for
-  // that mode (see getEffectiveChargingPowerKw), so referenceKw > 0 here.
-  const referenceKw = Math.max(vehicle.maxAcPowerKw ?? 0, vehicle.maxDcPowerKw ?? 0);
-  const score = referenceKw > 0 ? Math.min(1, best.effectivePowerKw / referenceKw) : UNKNOWN_FACTOR_SCORE;
-
   return {
-    score,
     effectivePowerKw: Math.round(best.effectivePowerKw * 100) / 100,
-    chargerId: best.charger.id,
     connectors: best.charger.connectors.map((cc) => ({ code: cc.connector.code, label: cc.connector.label })),
     limitingFactor: best.limitingFactor,
   };
-}
-
-function scoreDistance(userPosition: LatLng | null, station: StationRow): DistanceFactor {
-  const stationLat = decimalToNumber(station.latitude);
-  const stationLng = decimalToNumber(station.longitude);
-
-  if (!userPosition || stationLat === null || stationLng === null) {
-    return { score: UNKNOWN_FACTOR_SCORE, distanceKm: null };
-  }
-
-  const distanceKm = haversineDistanceKm(userPosition, { latitude: stationLat, longitude: stationLng });
-  return {
-    score: 1 / (1 + distanceKm / DISTANCE_DECAY_KM),
-    distanceKm: Math.round(distanceKm * 10) / 10,
-  };
-}
-
-function scoreRating(rating: StationRating): RatingFactor {
-  if (rating.count === 0 || rating.average === null) {
-    return { score: UNKNOWN_FACTOR_SCORE, average: null, count: rating.count };
-  }
-  return { score: rating.average / 5, average: rating.average, count: rating.count };
-}
-
-function scoreVerification(status: keyof typeof VERIFICATION_SCORES): VerificationFactor {
-  return { score: VERIFICATION_SCORES[status], status };
-}
-
-function scoreAvailability(eligibleChargers: ChargerRow[]): AvailabilityFactor {
-  const hasAvailable = eligibleChargers.some((c) => c.availability === "AVAILABLE");
-  const hasBusy = eligibleChargers.some((c) => c.availability === "BUSY");
-
-  if (hasAvailable) return { score: 1, status: "AVAILABLE" };
-  if (hasBusy) return { score: 0.4, status: "BUSY" };
-  return { score: UNKNOWN_FACTOR_SCORE, status: "UNKNOWN" };
 }
 
 // ---------------------------------------------------------------------------
@@ -262,10 +187,7 @@ export async function getStationRecommendations(
   }
   const vehicle = resolution.vehicle;
 
-  const userPosition: LatLng | null =
-    query.latitude !== undefined && query.longitude !== undefined
-      ? { latitude: query.latitude, longitude: query.longitude }
-      : null;
+  const userPosition: LatLng = { latitude: query.latitude, longitude: query.longitude };
 
   const stations = await prisma.station.findMany({
     where: { isDeleted: false },
@@ -273,64 +195,64 @@ export async function getStationRecommendations(
   });
   const stationsConsidered = stations.length;
 
-  // Stage 1 — hard eligibility (docs/recommendation-engine.md §2, Stage 1).
-  const eligible: { station: StationRow; eligibleChargers: ChargerRow[] }[] = [];
+  // Step 5 (vehicle/connector compatibility) + station-active check —
+  // hard filters, never a ranking factor. A station with no confirmed
+  // coordinate is excluded here too: distance/range can't be honestly
+  // evaluated without a real coordinate, so it's left out rather than
+  // guessed into or out of range.
+  const compatible: { station: StationRow; chargers: ChargerRow[] }[] = [];
   for (const station of stations) {
     if (station.status === "INACTIVE") continue;
+    if (station.latitude === null || station.longitude === null) continue;
 
-    const eligibleChargers = station.chargers.filter(
-      (charger) =>
-        charger.availability !== "UNAVAILABLE" &&
-        charger.connectors.some((cc) => vehicle.connectorCodes.includes(cc.connector.code))
-    );
-    if (eligibleChargers.length === 0) continue;
+    const chargers = eligibleChargers(station, vehicle);
+    if (chargers.length === 0) continue;
 
-    eligible.push({ station, eligibleChargers });
+    compatible.push({ station, chargers });
   }
 
-  // Stage 2 — weighted scoring, ratings fetched in one batched query
-  // rather than one per station (docs/recommendation-engine.md §3.3).
-  const ratings = await getStationRatingsBatch(eligible.map(({ station }) => station.id));
+  // Step 3 + 4 — real distance, then the user's own range filter.
+  const withinRange = compatible
+    .map(({ station, chargers }) => {
+      const distanceKm = haversineDistanceKm(userPosition, {
+        latitude: decimalToNumber(station.latitude) as number,
+        longitude: decimalToNumber(station.longitude) as number,
+      });
+      return { station, chargers, distanceKm };
+    })
+    .filter(({ distanceKm }) => distanceKm <= query.rangeKm);
 
-  const scored: RecommendedStation[] = eligible.map(({ station, eligibleChargers }) => {
-    const power = scorePower(vehicle, eligibleChargers);
-    const distance = scoreDistance(userPosition, station);
-    const rating = scoreRating(ratings.get(station.id) ?? { average: null, count: 0 });
-    const verification = scoreVerification(station.verificationStatus);
-    const availability = scoreAvailability(eligibleChargers);
+  // Step 7 — sort nearest to farthest. Distance is the only ordering
+  // criterion; ties break on name only for a stable, predictable order.
+  withinRange.sort(
+    (a, b) => a.distanceKm - b.distanceKm || a.station.stationName.localeCompare(b.station.stationName)
+  );
 
-    const score =
-      RECOMMENDATION_WEIGHTS.power * power.score +
-      RECOMMENDATION_WEIGHTS.distance * distance.score +
-      RECOMMENDATION_WEIGHTS.rating * rating.score +
-      RECOMMENDATION_WEIGHTS.verification * verification.score +
-      RECOMMENDATION_WEIGHTS.availability * availability.score;
+  // Step 6 — one Open/Closed value, computed once, applied to every result.
+  const availability = getStationOperatingStatus();
 
-    return {
-      id: station.id,
-      stationName: station.stationName,
-      operator: station.operator,
-      province: station.province,
-      district: station.district,
-      city: station.city,
-      status: station.status,
-      verificationStatus: station.verificationStatus,
-      latitude: decimalToNumber(station.latitude),
-      longitude: decimalToNumber(station.longitude),
-      score: Math.round(score * 1000) / 1000,
-      factors: { power, distance, rating, verification, availability },
-    };
-  });
-
-  scored.sort((a, b) => b.score - a.score || a.stationName.localeCompare(b.stationName));
+  const data: RecommendedStation[] = withinRange.slice(0, MAX_RESULTS).map(({ station, chargers, distanceKm }) => ({
+    id: station.id,
+    stationName: station.stationName,
+    operator: station.operator,
+    province: station.province,
+    district: station.district,
+    city: station.city,
+    status: station.status as "ACTIVE" | "INACTIVE",
+    latitude: decimalToNumber(station.latitude) as number,
+    longitude: decimalToNumber(station.longitude) as number,
+    distanceKm: Math.round(distanceKm * 10) / 10,
+    power: describePower(vehicle, chargers),
+    availability,
+  }));
 
   const meta: RecommendationMeta = {
     stationsConsidered,
-    stationsEligible: scored.length,
-    stationsWithKnownDistance: scored.filter((s) => s.factors.distance.distanceKm !== null).length,
-    stationsWithKnownRating: scored.filter((s) => s.factors.rating.count > 0).length,
-    stationsWithKnownAvailability: scored.filter((s) => s.factors.availability.status !== "UNKNOWN").length,
+    stationsCompatible: compatible.length,
+    stationsWithinRange: data.length,
+    rangeKm: query.rangeKm,
+    availability,
   };
 
-  return { ok: true, data: scored.slice(0, query.limit), meta };
+  return { ok: true, data, meta };
 }

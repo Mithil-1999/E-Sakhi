@@ -164,12 +164,13 @@ This is the concept the whole dataset trust model is built on — see [data-mode
 
 ## 7. Recommendation Engine Architecture
 
-Implemented (Part 09) as a standalone service module (`src/services/recommendation-engine.ts`), not as logic embedded in the `/recommendations` page. Its full contract — every factor's exact formula, the vehicle input shape, the output/meta shape, and what today's real (mostly coordinate/review-less) dataset means for it in practice — is locked in `docs/recommendation-engine.md`, written before implementation per this section's original instruction. Summary:
+Implemented as a standalone service module (`src/services/recommendation-engine.ts`), not as logic embedded in the `/recommendations` page. **Rewritten from its original five-factor weighted-score design** (later product decision — Rating and Verified removed entirely, no score/percentage of any kind) **to a range-and-distance filter+sort model.** Full current contract locked in `docs/recommendation-engine.md`. Summary:
 
-1. **Hard eligibility filters first** (connector compatibility, charger not confirmed unavailable, station not confirmed inactive) — a station that fails these is excluded, not merely scored low.
-2. **Scored ranking second**, using a single configuration object (`src/lib/config/recommendation-weights.ts`) for the weights (compatibility/distance/power/availability/rating/verification). No component or route hard-codes a weight; everything reads from that one config.
-3. **Unknown data never scores as if it were good data** — an unknown rating, unknown availability, or unknown verification status is scored as unknown/neutral-low (`0.25`, `UNKNOWN_FACTOR_SCORE`), never defaulted to a perfect score.
-4. **`GET /api/recommendations`, not a mutating route** — a read with no side effects and no persistence (no ML, no per-user history), so it's a `GET` with query params like every other public list endpoint, not a `POST`.
+1. **Location and a search range (km) are both required inputs** — no hard-coded range presets; the model is "every compatible station within the visitor's own chosen range," which isn't meaningful without a real point and a real range to measure against.
+2. **Hard filters, not scored factors**: connector/charging-mode compatibility, charger not confirmed unavailable, station not confirmed inactive, station has a real coordinate, and — the one new hard filter — real distance to the visitor within the chosen range. A station failing any of these is excluded outright, never shown at a lower rank.
+3. **Distance is the only ordering criterion** among what remains — ascending, nearest first, no weighting, no other factor influences order.
+4. **Availability is a fixed operating-hours label** (`src/lib/time/operating-hours.ts`, 06:00–20:00 Nepal time), computed once per request and applied identically to every result — explicitly not real-time charger status, since this project has no live telemetry source.
+5. **`GET /api/recommendations`, still not a mutating route** — a read with no side effects and no persistence (no ML, no per-user history, no score), so it's still a `GET` with query params like every other public list endpoint.
 
 ---
 
