@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Award, Heart, MapPin, SearchX, Zap } from "lucide-react";
+import { Award, Heart, MapPin, Navigation, Zap } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { StationCard } from "@/components/features/StationCard";
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 const QUICK_LINKS = [
   { href: "/map", label: "Map", icon: MapPin },
-  { href: "/stations", label: "Find Chargers", icon: SearchX },
+  { href: "/marg", label: "E Sakhi Marg", icon: Navigation },
   { href: "/charging-calculator", label: "Charging Calculator", icon: Zap },
   { href: "/recommendations", label: "Recommendations", icon: Award },
 ];

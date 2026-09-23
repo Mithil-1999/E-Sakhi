@@ -134,11 +134,11 @@ export default async function StationDetailPage({ params }: PageProps<"/stations
   return (
     <Container className="py-10">
       <Link
-        href="/stations"
+        href="/map"
         className="inline-flex items-center gap-1 text-sm font-medium text-emerald-600 hover:underline dark:text-emerald-400"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Back to Find Chargers
+        Back to Map
       </Link>
 
       <div className="mt-4 flex flex-wrap items-start justify-between gap-4">

@@ -4,7 +4,7 @@
 
 E Sakhi is a smart Electric Vehicle (EV) charging-station discovery and recommendation platform focused primarily on Nepal. It helps EV drivers find charging stations, understand which chargers actually fit their vehicle, estimate charging time, and get station recommendations that account for compatibility, distance, power, availability, rating, and how well-verified the station's data actually is.
 
-> **Status:** feature-complete through Part 16 (final testing, security review, polish — the last planned part), plus a later E Sakhi Marg addendum. The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle/favorites API, an interactive Nepal map, a full search/filter station list, station detail pages, a charging calculator, multi-factor station recommendations, an EV journey/route planner (`/marg`), real per-user favorites (`/dashboard`, `/my-favorites`), a live admin overview (`/admin`), real admin station/charger management (`/admin/stations`), a dedicated verification workflow (`/admin/verification`), a diff/approve Excel re-import tool (`/admin/import`), real reviews and a report-triage queue (`/admin/reports`) are all live. See [Development Roadmap](#development-roadmap) for the full build history.
+> **Status:** feature-complete through Part 16 (final testing, security review, polish — the last planned part), plus later addenda. The project foundation, database schema, the real initial dataset (460 stations / 517 chargers), auth, the station/charger/operator/vehicle/favorites API, an interactive Nepal map, station detail pages, a charging calculator, multi-factor station recommendations, an EV journey/route planner (`/marg`), real per-user favorites (`/dashboard`, `/my-favorites`), a live admin overview (`/admin`), real admin station/charger management (`/admin/stations`), a dedicated verification workflow (`/admin/verification`), a diff/approve Excel re-import tool (`/admin/import`), real reviews and a report-triage queue (`/admin/reports`) are all live. (The original `/stations` search/filter list was later removed by product decision — see "Search + Filters" below — in favor of `/map` and `/marg` as the two ways to discover stations.) See [Development Roadmap](#development-roadmap) for the full build history.
 
 ---
 
@@ -132,7 +132,7 @@ npm run dev
 
 Then open **http://localhost:3000** in a browser — that single dev server serves every page (frontend) and every `/api/*` endpoint (backend) at once.
 
-`npm run dev` serves the home page, a working `/map`, `/stations` (search/filters), `/stations/[id]` (station details, real reviews, and a report flow), `/charging-calculator`, `/recommendations`, `/dashboard`, `/my-favorites`, plus `/login`, `/register`, `/profile`, a real `/admin` overview dashboard, admin station/charger management at `/admin/stations`, a verification workflow at `/admin/verification`, an Excel re-import tool at `/admin/import`, and a report-triage queue at `/admin/reports`.
+`npm run dev` serves the home page, a working `/map`, `/marg` (the EV journey planner), `/stations/[id]` (station details, real reviews, and a report flow), `/charging-calculator`, `/recommendations`, `/dashboard`, `/my-favorites`, plus `/login`, `/register`, `/profile`, a real `/admin` overview dashboard, admin station/charger management at `/admin/stations`, a verification workflow at `/admin/verification`, an Excel re-import tool at `/admin/import`, and a report-triage queue at `/admin/reports`.
 
 ### Environment Variables
 
@@ -213,14 +213,13 @@ Mutating endpoints need an authenticated `ADMIN` session cookie — easiest to t
 
 All Leaflet-specific code is isolated in `src/components/map/MapProvider.tsx` (see `docs/architecture.md §6`) — swapping tile/map providers later means editing one file, not hunting through feature code.
 
-### Search + Filters
+### Search + Filters — removed (later product decision)
 
-`/stations` is a fully server-rendered, URL-driven search page — every filter change navigates to a new `?...` URL (debounced for free-text search), so results, filters, and pagination are all shareable/bookmarkable links, not client-side-only state. It's built on the same `listStations()` service Part 04's API uses (see `docs/architecture.md §4` for why it calls the service directly rather than fetching its own API route), extended with three filters Part 04 deliberately deferred:
+The public `/stations` search/filter list ("Find Chargers") — a fully server-rendered, URL-driven search page built on `listStations()` — was **removed by explicit product decision**, in favor of `/map` (browse visually) and `/marg` (plan a journey) as the two ways to discover stations. `StationFilterPanel.tsx` (its filter UI) is **not** deleted — `/admin/stations` still uses the exact same component for the admin station list, so it stays. Nothing else about it changed:
 
-- **Power range** — the five fixed buckets from the project brief (`src/lib/config/power-buckets.ts`), plus "Unknown" for a charger with no recorded power rather than a silent default.
-- **Vehicle type** and **Availability** — real filters against real schema fields, honest about current data: no charger in the seeded dataset has a vehicle type or a non-"Unknown" availability yet (no real-time source is connected), so selecting either correctly returns zero results today rather than something fabricated.
-
-Try it: [`/stations?province=Bagmati`](http://localhost:3000/stations?province=Bagmati) (171 matches), [`/stations?powerBucket=60_TO_120`](http://localhost:3000/stations?powerBucket=60_TO_120) (35 matches — a real, populated range, unlike vehicle/availability).
+- `src/app/stations/[id]/page.tsx` (station detail pages) are untouched and still linked from the map, recommendations, and favorites — only the *list* page (`src/app/stations/page.tsx`) was deleted.
+- `GET /api/stations`, `GET /api/stations/[id]`, and every other station API endpoint are untouched — the map, calculator, recommendations, and admin all still depend on them.
+- Every link that used to point to `/stations` (nav, footer, the homepage's primary button, the dashboard's quick links, the favorites empty state, the station detail page's "back" link) was repointed to `/map` or `/marg` rather than left dangling.
 
 ### Station Details
 
@@ -231,14 +230,14 @@ Try it: [`/stations?province=Bagmati`](http://localhost:3000/stations?province=B
 `/charging-calculator` estimates the energy and time needed to charge a vehicle at a given charger. All math lives in `src/services/charging-calculator.ts` (pure functions, no database access) — the page only collects input and renders the result:
 
 - **Vehicle** — pick from a small seeded reference catalog of real EVs sold in Nepal (`prisma/seed-vehicles.ts`; currently cars only — see that file for why scooters/motorcycles aren't guessed at), or enter any vehicle's own battery capacity/AC/DC power manually.
-- **Charger** — search real stations (reuses `GET /api/stations` and `GET /api/stations/[id]`, same endpoints as `/map`/`/stations`) and pick one of its real chargers, or enter a charging mode/power manually.
+- **Charger** — search real stations (reuses `GET /api/stations` and `GET /api/stations/[id]`, the same endpoints `/map` uses) and pick one of its real chargers, or enter a charging mode/power manually.
 - **Estimate** — energy required is always computable from battery capacity alone; a time estimate is only shown when both the vehicle's max power for that charging mode *and* the charger's power rating are on record — otherwise the gap is stated plainly instead of guessing. Every estimate carries a caveat: it assumes constant charging power, while real charging (especially DC fast charging) typically tapers above ~80%.
 
 `GET /api/vehicles` (public, optional `vehicleType` filter) serves the same catalog the calculator uses.
 
 ### E Sakhi Marg — EV Journey Planner
 
-`/marg` ("marg" = route/journey/path) plans a whole start→destination journey, not just "the nearest charger" — a new, separate feature from the "Find Chargers" search at `/stations`, which it leaves completely untouched (same nav bar, both reachable side by side). Given a starting point, destination, connector type, and charging mode, it returns a real driving route with real charging-station checkpoints along the way:
+`/marg` ("marg" = route/journey/path) plans a whole start→destination journey, not just "the nearest charger." It was originally built as a new feature alongside the "Find Chargers" search list (`/stations`); that list page was later removed entirely (see "Search + Filters" above) while `/marg` was unaffected. Given a starting point, destination, connector type, and charging mode, it returns a real driving route with real charging-station checkpoints along the way:
 
 - **Route** — computed by `src/services/marg-service.ts` via a real driving-route lookup (`src/lib/geo/osrm.ts`, OSRM's public routing API — actual road-following geometry and distance, never a straight line). No API key needed; documented there as the one place to swap in a paid routing provider later.
 - **Place search** — `GET /api/marg/geocode?q=` proxies OpenStreetMap's Nominatim (server-side, for its required User-Agent header) so a visitor can type "Kathmandu"/"Pokhara"/any Nepali place name for Starting Point/Destination, or use their browser location for the start.
@@ -260,7 +259,7 @@ Try it: [`/stations?province=Bagmati`](http://localhost:3000/stations?province=B
 
 ### Dashboard & Favorites
 
-Real per-user favorites (Part 10) — the `Favorite` model has existed since Part 02; this is the part that gives it a UI. Toggle a favorite from a station's detail page (replacing the disabled stub Part 07 left there) or directly from a station card on `/stations`, `/dashboard`, or `/my-favorites` — a small heart icon that requires no page reload (`src/components/features/FavoriteButton.tsx`). Signed out, the same control is a real link to `/login?callbackUrl=...`, not a fake-working button.
+Real per-user favorites (Part 10) — the `Favorite` model has existed since Part 02; this is the part that gives it a UI. Toggle a favorite from a station's detail page (replacing the disabled stub Part 07 left there) or directly from a station card on `/dashboard` or `/my-favorites` — a small heart icon that requires no page reload (`src/components/features/FavoriteButton.tsx`). Signed out, the same control is a real link to `/login?callbackUrl=...`, not a fake-working button.
 
 - **`/dashboard`** — a light, signed-in landing hub: a favorites preview (first 3) plus quick links to the rest of the app. It doesn't duplicate `/profile`'s account fields or `/my-favorites`' full grid; it links to both.
 - **`/my-favorites`** — the full list, reusing `StationCard` rather than a second rendering of the same data. Unfavoriting a card removes it from the list immediately (local client state seeded from the server-fetched list, not a full page refresh).
@@ -278,7 +277,7 @@ Real per-user favorites (Part 10) — the `Favorite` model has existed since Par
 
 ### Admin Station Management
 
-`/admin/stations` (list, with the same search/filter panel and pagination `/stations` uses, plus an admin-only "show soft-deleted" toggle) → `/admin/stations/new` (create) and `/admin/stations/[id]/edit` (edit — station fields, the full verification checklist, chargers, and soft-delete) give real create/edit/delete UI to endpoints that mostly already existed:
+`/admin/stations` (list, using `StationFilterPanel`/the same search/filter panel and pagination the now-removed public `/stations` search page used, plus an admin-only "show soft-deleted" toggle) → `/admin/stations/new` (create) and `/admin/stations/[id]/edit` (edit — station fields, the full verification checklist, chargers, and soft-delete) give real create/edit/delete UI to endpoints that mostly already existed:
 
 - **Stations** use the exact `POST`/`PUT`/`DELETE /api/stations[/id]` endpoints from Part 04 — no new station mutation logic, just a real form in front of it. Client-side validation reuses the identical Zod schemas (`src/lib/validation/station.ts`) those routes already validate with.
 - **Chargers had no mutation endpoints until this part** — `POST /api/chargers` and `PUT`/`DELETE /api/chargers/[id]` are new (`src/services/charger-service.ts`), soft-delete only, admin-only, and every `connectorCodes` value is checked against the real `Connector` table rather than trusted as free text.

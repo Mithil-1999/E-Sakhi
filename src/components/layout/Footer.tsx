@@ -7,7 +7,6 @@ const footerLinks = [
     heading: "Explore",
     links: [
       { href: "/map", label: "Map" },
-      { href: "/stations", label: "Find Chargers" },
       { href: "/marg", label: "E Sakhi Marg" },
       { href: "/charging-calculator", label: "Charging Calculator" },
       { href: "/recommendations", label: "Recommendations" },

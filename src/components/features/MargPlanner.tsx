@@ -81,9 +81,12 @@ const AVAILABILITY_STYLES: Record<MargCheckpoint["availability"], string> = {
 };
 
 /**
- * E Sakhi Marg — the EV journey/route planner (a new, separate feature
- * from the existing "Find Chargers" station search at /stations, which
- * this deliberately leaves untouched). Client-interactive for the same
+ * E Sakhi Marg — the EV journey/route planner (originally built as a new,
+ * separate feature alongside the "Find Chargers" station search at
+ * /stations; that list page was later removed entirely by product
+ * decision — see README.md's "Find Chargers" note — while /stations/[id]
+ * station detail pages, the underlying GET /api/stations data, and this
+ * page all remain unaffected). Client-interactive for the same
  * reason ChargingCalculatorTool.tsx/RecommendationTool.tsx are: real-time
  * input collection, geolocation, and a big interactive map, not a
  * shareable/bookmarkable filtered list (docs/architecture.md §4). All

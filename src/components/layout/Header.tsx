@@ -11,7 +11,6 @@ import type { SessionUser } from "@/lib/auth/session";
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/map", label: "Map" },
-  { href: "/stations", label: "Find Chargers" },
   { href: "/marg", label: "E Sakhi Marg" },
   { href: "/charging-calculator", label: "Calculator" },
   { href: "/recommendations", label: "Recommendations" },

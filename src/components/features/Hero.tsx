@@ -17,8 +17,8 @@ export function Hero() {
         </p>
 
         <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-          <Button href="/stations" variant="primary">
-            Find Chargers
+          <Button href="/marg" variant="primary">
+            E Sakhi Marg
           </Button>
           <Button href="/map" variant="outline">
             Explore Map

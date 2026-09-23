@@ -37,8 +37,8 @@ export function MyFavoritesList({ initialFavorites }: { initialFavorites: Statio
             Save a station from its detail page or from a search result to find it here quickly
             next time.
           </p>
-          <Button href="/stations" variant="outline" className="mt-2">
-            Find Chargers
+          <Button href="/map" variant="outline" className="mt-2">
+            Explore Map
           </Button>
         </div>
       ) : (
