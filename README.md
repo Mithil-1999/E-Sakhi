@@ -157,14 +157,15 @@ The initial dataset (460 stations / 517 plugs, exactly matching the project brie
 
 ### Authentication
 
-Auth.js (NextAuth v5) with a Credentials provider, `bcryptjs` password hashing, and JWT sessions. There is no public sign-up path to the `ADMIN` role — `/register` always creates a `USER`. Create (or promote) the first administrator with:
+Auth.js (NextAuth v5) with a Credentials provider, `bcryptjs` password hashing, and JWT sessions — remember-me sizes the session token's own expiry (30 days checked, 1 day unchecked; `src/lib/auth/auth.ts`), it doesn't just toggle a cookie flag. There is no public sign-up path to `ADMIN` or `SUPER_ADMIN` — `/register` always creates a Member. Create (or promote) the first Admin or Super Admin with:
 
 ```bash
 # Set ADMIN_SEED_EMAIL and ADMIN_SEED_PASSWORD in .env first
+# (optionally ADMIN_SEED_ROLE=SUPER_ADMIN — defaults to ADMIN)
 npm run db:create-admin
 ```
 
-Safe to re-run: if that email already has an account, it's promoted to `ADMIN` without touching its password; otherwise a new `ADMIN` account is created. Route protection lives in `src/proxy.ts` — note that's Next.js 16's renamed `middleware.ts` convention (see `docs/architecture.md §3`), not a typo.
+Safe to re-run: if that email already has an account, it's promoted to the given role without touching its password; otherwise a new account is created. See "Role-Based Access Control (RBAC)" below for the full three-role model. Route protection lives in `src/proxy.ts` — note that's Next.js 16's renamed `middleware.ts` convention (see `docs/architecture.md §3`), not a typo.
 
 ### Station API
 
@@ -195,6 +196,14 @@ All station data is served from the database through these endpoints — nothing
 | `DELETE /api/stations/[id]/reviews` | Signed-in | Deletes the caller's own review for this station. Idempotent. |
 | `POST /api/stations/[id]/reports` | Signed-in | Body `{ reportType, description? }`. Creates a "Report Incorrect Information" submission for admin triage. |
 | `PATCH /api/reports/[id]` | `ADMIN` | Body `{ status }`. Moves a report between `PENDING`/`REVIEWING`/`RESOLVED`/`REJECTED`; used by the `/admin/reports` triage queue. |
+| `GET /api/users` | `SUPER_ADMIN` | Paginated, searchable (`search`, matches name/email/phone), filterable by `role`/`status`. |
+| `POST /api/users` | `SUPER_ADMIN` | Creates an Admin or Member account (never Super Admin) with a real password — they can log in immediately. |
+| `GET /api/users/[id]` | `SUPER_ADMIN` | Full detail for one user (never the password hash). |
+| `PATCH /api/users/[id]/role` | `SUPER_ADMIN` | Body `{ role }` (`ADMIN`/`USER` only). Rejects a Super Admin target — that role can't be changed here. |
+| `PATCH /api/users/[id]/status` | `SUPER_ADMIN` | Body `{ status }` (`ACTIVE`/`INACTIVE`). Rejects deactivating your own account. |
+| `PATCH /api/users/[id]/reset-password` | `SUPER_ADMIN` | Body `{ newPassword }`. The real mechanism behind `/forgot-password`'s guidance — no email is sent. |
+| `PATCH /api/profile` | Signed-in | Body `{ name, email, phone? }` — self-service only; never accepts `role`/`status`. |
+| `PATCH /api/profile/password` | Signed-in | Body `{ currentPassword, newPassword, confirmNewPassword }` — requires your real current password. |
 | `GET /api/marg/geocode` | Public | Query `q` (min 2 chars). Place-name search (OpenStreetMap Nominatim) for E Sakhi Marg's Starting Point/Destination fields. |
 | `POST /api/marg/plan` | Public | Body `{ startLabel, startLatitude, startLongitude, destLabel, destLatitude, destLongitude, connector, chargingMode? }`. Plans a real driving route (OSRM) with real charging-station checkpoints along it. `404` with a plain-language message if no route or no compatible station exists — see the E Sakhi Marg section below. |
 
@@ -267,9 +276,43 @@ Real per-user favorites (Part 10) — the `Favorite` model has existed since Par
 - **Ownership is structural, not just checked** — every mutation derives `userId` from the authenticated session (`requireUserForApi()`) and never reads it from the request; a client literally cannot submit a `userId` for `POST`/`DELETE /api/favorites`, satisfying `docs/architecture.md §3`'s ownership rule by construction, not just by a runtime check that could be forgotten later.
 - Both `POST` (favorite) and `DELETE` (unfavorite) are idempotent — clicking twice, or a retried request, never errors.
 
+### Role-Based Access Control (RBAC)
+
+Three roles, a strict hierarchy, enforced server-side on every request — never just hidden in the frontend:
+
+| Role | Can | Cannot |
+|---|---|---|
+| **Member** (`UserRole.USER` in the schema — kept as `USER` at the database level to avoid an unnecessary enum rename; labeled "Member" everywhere in the UI) | Every public feature (Map, E Sakhi Marg, Calculator, Recommendations), manage their own favorites/reviews/reports, edit their own name/email/phone, change their own password | Anything under `/admin/**` |
+| **Admin** | Everything a Member can, plus the existing station/charger management, Excel import, verification workflow, and report triage (`/admin`, `/admin/stations/**`, `/admin/import`, `/admin/verification`, `/admin/reports`) | User management, changing anyone's role, creating other accounts |
+| **Super Admin** | Everything an Admin can (a strict superset — see below), plus full user management: create Admin/Member accounts, change roles, activate/deactivate accounts, reset anyone's password | Delete their own account, deactivate or demote themselves (both explicitly blocked server-side) |
+
+**How the hierarchy is enforced** (`src/lib/auth/session.ts` / `src/lib/auth/api.ts`): `requireAdmin()`/`requireAdminForApi()` treat `SUPER_ADMIN` as passing every check `ADMIN` does — a single, simple rule that made every one of the ~19 pre-existing `ADMIN`-gated pages/routes (station/charger management, import, verification, reports) correctly work for `SUPER_ADMIN` too, with zero changes to any of them. A separate `requireSuperAdmin()`/`requireSuperAdminForApi()` gate the genuinely new user-management surface. Both are **re-verified fresh against the database on every request** (not just read from the JWT session), so a role change or account deactivation takes effect on that person's very next request — not just at their next login. `src/proxy.ts` also redirects at the edge as a UX shortcut, but per this app's existing rule, it is never the real security boundary.
+
+**Login redirection** (`src/app/login/actions.ts`): Super Admin and Admin both land on `/admin` (which renders differently per role — see below); a Member lands on `/dashboard`.
+
+**User management** (`/admin/users`, `/admin/users/new`, `/admin/users/[id]` — all Super-Admin-only): search/filter by name, email, phone, role, or status; create an Admin or Member account directly (never Super Admin — see below); change a role (Member ↔ Admin only); activate/deactivate; reset a password directly (see "Forgot password," next). `GET/POST /api/users`, `GET /api/users/[id]`, `PATCH /api/users/[id]/role`, `PATCH /api/users/[id]/status`, and `PATCH /api/users/[id]/reset-password` are all Super-Admin-only, independently of the UI — a plain Admin (or Member) calling any of them directly gets a real `403`/`401`, not just a hidden button.
+
+**Getting a Super Admin account**: there is deliberately no in-app way to create one (the "Add User" form only offers Admin/Member) — same out-of-band pattern this project already used for the very first Admin account:
+```bash
+# In .env:
+ADMIN_SEED_EMAIL=you@example.com
+ADMIN_SEED_PASSWORD=a-strong-password
+ADMIN_SEED_ROLE=SUPER_ADMIN
+```
+```bash
+npm run db:create-admin
+```
+Safe to re-run — promotes an existing account or creates a new one, and never overwrites an existing password.
+
+**"Forgot password" is honest about what this project actually has**: there's no email service configured, so `/forgot-password` doesn't pretend to send a reset link — it explains that a Super Admin can reset any account's password directly from `/admin/users/[id]`, to be shared with that person out of band.
+
+**Self-service profile** (`/profile`, every role): edit your own name/email/phone (`PATCH /api/profile`) and change your own password with your current password required (`PATCH /api/profile/password`) — neither endpoint's schema even accepts a `role` or `status` field, so a hand-crafted request can't smuggle either through.
+
+**Station audit trail**: `Station.createdById`/`updatedById` (nullable — the original 460 seeded stations predate this and were bulk-imported by no particular admin) record who created/last edited a station, shown on `/admin/stations/[id]/edit`.
+
 ### Admin Dashboard
 
-`/admin` (`ADMIN`-only, real-server-checked via `requireAdmin()` regardless of what `src/proxy.ts` already redirected) replaces the old "coming soon" stub with a real overview, computed fresh from the database on every request — nothing cached, nothing hard-coded:
+`/admin` (`ADMIN`-or-`SUPER_ADMIN`, real-server-checked via `requireAdmin()` regardless of what `src/proxy.ts` already redirected — renders as "Admin Dashboard" or "Super Admin Dashboard" with extra cards/sidebar links for a Super Admin) replaces the old "coming soon" stub with a real overview, computed fresh from the database on every request — nothing cached, nothing hard-coded:
 
 - **Counts**: stations, chargers, operators, connectors, users (and how many are admins), favorites, reviews, and reports. Reviews/reports were genuinely `0` before Part 15 built the features that create them — the "Reports" card now also links to `/admin/reports`, the triage queue.
 - **Station status breakdown**, confirmed-coordinate count, and soft-deleted station/charger counts.
@@ -349,6 +392,8 @@ Real-time charger availability, operator APIs, payment/booking, charging-session
 | `relation "stations" does not exist` (or similar) | Migrations haven't been applied yet — run `npx prisma migrate dev`. |
 | Pages load but show 0 stations / empty lists | The database has no data yet — run `npm run db:seed` (idempotent, safe to re-run). |
 | Can't log in as admin | No admin account exists yet — set `ADMIN_SEED_EMAIL`/`ADMIN_SEED_PASSWORD` in `.env`, then run `npm run db:create-admin`. |
+| `[auth][error] MissingSecret` in the console, every login fails | `AUTH_SECRET` is empty in `.env` — generate one with `npx auth secret` (or `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`) and restart `npm run dev` (env vars are only read at process start, so an already-running dev server won't pick up a change until restarted). |
+| A role change or deactivation doesn't seem to take effect | Only for the account that made the change's *own* browser — everyone else needs their next request, not a page refresh of the admin's screen, to see it (`requireUser()` re-checks the database fresh every time, but the affected person's own next navigation is what triggers that check). |
 | PowerShell blocks `npm` with an execution-policy error | Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once in that PowerShell profile, or run the commands from a Command Prompt/Git Bash terminal instead. |
 | Port 3000 already in use | Another `next dev` is already running (check other terminals/VS Code windows), or run `npm run dev -- -p 3001` to use a different port. |
 | Map tiles don't load | `NEXT_PUBLIC_MAP_TILE_URL` is unset — it defaults to the public OpenStreetMap tile server, which is fine for local development. |

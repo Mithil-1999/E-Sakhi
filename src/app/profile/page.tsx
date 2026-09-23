@@ -1,14 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Shield, User as UserIcon } from "lucide-react";
+import { Shield, ShieldCheck, User as UserIcon } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { LogoutButton } from "@/components/features/LogoutButton";
+import { EditProfileForm } from "@/components/features/EditProfileForm";
+import { ChangePasswordForm } from "@/components/features/ChangePasswordForm";
 
 export const metadata: Metadata = {
   title: "Your profile",
+};
+
+const ROLE_LABELS: Record<"SUPER_ADMIN" | "ADMIN" | "USER", string> = {
+  SUPER_ADMIN: "Super Admin",
+  ADMIN: "Administrator",
+  USER: "Member",
 };
 
 export default async function ProfilePage() {
@@ -19,7 +27,7 @@ export default async function ProfilePage() {
 
   const user = await prisma.user.findUnique({
     where: { id: sessionUser.id },
-    select: { name: true, email: true, role: true, createdAt: true },
+    select: { name: true, email: true, phone: true, role: true, status: true, createdAt: true },
   });
 
   // The session referenced a user row that's gone (e.g. deleted account) —
@@ -45,24 +53,47 @@ export default async function ProfilePage() {
           <div className="flex items-center justify-between">
             <dt className="text-sm text-slate-600 dark:text-slate-400">Role</dt>
             <dd className="inline-flex items-center gap-1 text-sm font-medium text-slate-900 dark:text-white">
+              {user.role === "SUPER_ADMIN" && <ShieldCheck className="h-4 w-4 text-emerald-600" aria-hidden="true" />}
               {user.role === "ADMIN" && <Shield className="h-4 w-4 text-emerald-600" aria-hidden="true" />}
-              {user.role === "ADMIN" ? "Administrator" : "Member"}
+              {ROLE_LABELS[user.role]}
             </dd>
           </div>
           <div className="flex items-center justify-between">
-            <dt className="text-sm text-slate-600 dark:text-slate-400">Member since</dt>
+            <dt className="text-sm text-slate-600 dark:text-slate-400">Account status</dt>
+            <dd className="text-sm font-medium text-slate-900 dark:text-white">
+              {user.status === "ACTIVE" ? "Active" : "Inactive"}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between">
+            <dt className="text-sm text-slate-600 dark:text-slate-400">Date joined</dt>
             <dd className="text-sm font-medium text-slate-900 dark:text-white">
               {new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(user.createdAt)}
             </dd>
           </div>
         </dl>
 
-        <p className="mt-6 text-sm text-slate-500 dark:text-slate-500">
+        <div className="mt-8 border-t border-slate-200 pt-6 dark:border-slate-800">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Edit profile</h2>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Your role can&apos;t be changed here — only a Super Admin can do that.
+          </p>
+          <div className="mt-4">
+            <EditProfileForm initialName={user.name} initialEmail={user.email} initialPhone={user.phone} />
+          </div>
+        </div>
+
+        <div className="mt-8 border-t border-slate-200 pt-6 dark:border-slate-800">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Change password</h2>
+          <div className="mt-4">
+            <ChangePasswordForm />
+          </div>
+        </div>
+
+        <p className="mt-8 border-t border-slate-200 pt-6 text-sm text-slate-500 dark:border-slate-800 dark:text-slate-500">
           <Link href="/my-favorites" className="font-medium text-emerald-600 hover:underline dark:text-emerald-400">
             My Favorites
           </Link>{" "}
-          is live, and reviews are too — leave one from any station&apos;s detail page. Editing
-          your profile isn&apos;t built yet.
+          is live, and reviews are too — leave one from any station&apos;s detail page.
         </p>
 
         <div className="mt-6 border-t border-slate-200 pt-6 dark:border-slate-800">

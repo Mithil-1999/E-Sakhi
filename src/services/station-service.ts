@@ -47,6 +47,10 @@ const stationDetailInclude = {
       connectors: { include: { connector: { select: { code: true, label: true } } } },
     },
   },
+  // Name only — never email/role/etc. here; see the "audit information"
+  // requirement's own "don't expose sensitive information unnecessarily."
+  createdBy: { select: { id: true, name: true } },
+  updatedBy: { select: { id: true, name: true } },
 } satisfies Prisma.StationInclude;
 
 export type StationListRow = Prisma.StationGetPayload<{ include: typeof stationListInclude }>;
@@ -165,6 +169,10 @@ export function toStationDetail(station: StationDetailRow, rating: StationRating
     isDeleted: station.isDeleted,
     createdAt: station.createdAt,
     updatedAt: station.updatedAt,
+    // Nullable — the ~460 seeded stations predate this field and were
+    // bulk-imported by no particular admin (see the schema's own comment).
+    createdBy: station.createdBy,
+    updatedBy: station.updatedBy,
   };
 }
 
@@ -401,7 +409,8 @@ export type MutationResult<T> =
   | { ok: false; error: string; status: number };
 
 export async function createStation(
-  input: StationCreateInput
+  input: StationCreateInput,
+  createdById: string
 ): Promise<MutationResult<StationDetail>> {
   if (input.operatorId) {
     const operator = await prisma.operator.findUnique({ where: { id: input.operatorId } });
@@ -428,6 +437,8 @@ export async function createStation(
         verificationStatus: input.verificationStatus,
         assumptionFlag: input.assumptionFlag,
         verificationSource: input.verificationSource ?? null,
+        createdById,
+        updatedById: createdById,
       },
       include: stationDetailInclude,
     });
@@ -479,7 +490,7 @@ export async function updateStation(
     }
   }
 
-  const data: Prisma.StationUpdateInput = {};
+  const data: Prisma.StationUpdateInput = { updatedBy: { connect: { id: adminId } } };
   const logs: LogEntry[] = [];
 
   if (input.stationName !== undefined) data.stationName = input.stationName;

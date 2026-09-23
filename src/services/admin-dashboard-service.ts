@@ -26,6 +26,8 @@ export type AdminDashboardStats = {
     /** Stations with a confirmed, non-null latitude/longitude. */
     withCoordinates: number;
     deleted: number;
+    /** How many of the total this specific admin created (Station.createdById) — 0 for the ~460 seeded stations, which predate audit tracking and have no createdById. Only computed when `actingUserId` is passed to getAdminDashboardStats(). */
+    createdByActingUser: number;
   };
   chargers: {
     total: number;
@@ -35,7 +37,14 @@ export type AdminDashboardStats = {
   connectors: number;
   users: {
     total: number;
+    /** ADMIN + SUPER_ADMIN combined — the pre-RBAC-upgrade meaning, kept for the existing Admin Dashboard's stat card. */
     admins: number;
+    /** RBAC upgrade breakdown, for the Super-Admin-only extra dashboard cards. */
+    superAdminCount: number;
+    adminOnlyCount: number;
+    memberCount: number;
+    activeCount: number;
+    inactiveCount: number;
   };
   favorites: number;
   reviews: number;
@@ -53,18 +62,24 @@ export type AdminDashboardStats = {
 // src/services/station-service.ts's normalizeStationStatus().
 const ALL_STATION_STATUSES = ["ACTIVE", "INACTIVE"] as const;
 
-export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
+export async function getAdminDashboardStats(actingUserId?: string): Promise<AdminDashboardStats> {
   const [
     stationTotal,
     stationStatusGroups,
     stationsWithCoordinates,
     stationsDeleted,
+    stationsCreatedByActingUser,
     chargerTotal,
     chargersDeleted,
     operatorCount,
     connectorCount,
     userTotal,
     adminCount,
+    superAdminCount,
+    adminOnlyCount,
+    memberCount,
+    activeUserCount,
+    inactiveUserCount,
     favoriteCount,
     reviewCount,
     reportTotal,
@@ -78,12 +93,20 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
       where: { isDeleted: false, latitude: { not: null }, longitude: { not: null } },
     }),
     prisma.station.count({ where: { isDeleted: true } }),
+    actingUserId
+      ? prisma.station.count({ where: { isDeleted: false, createdById: actingUserId } })
+      : Promise.resolve(0),
     prisma.charger.count({ where: { isDeleted: false } }),
     prisma.charger.count({ where: { isDeleted: true } }),
     prisma.operator.count(),
     prisma.connector.count(),
     prisma.user.count(),
+    prisma.user.count({ where: { role: { in: ["ADMIN", "SUPER_ADMIN"] } } }),
+    prisma.user.count({ where: { role: "SUPER_ADMIN" } }),
     prisma.user.count({ where: { role: "ADMIN" } }),
+    prisma.user.count({ where: { role: "USER" } }),
+    prisma.user.count({ where: { status: "ACTIVE" } }),
+    prisma.user.count({ where: { status: "INACTIVE" } }),
     prisma.favorite.count(),
     prisma.review.count(),
     prisma.report.count(),
@@ -117,11 +140,20 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
       byStatus,
       withCoordinates: stationsWithCoordinates,
       deleted: stationsDeleted,
+      createdByActingUser: stationsCreatedByActingUser,
     },
     chargers: { total: chargerTotal, deleted: chargersDeleted },
     operators: operatorCount,
     connectors: connectorCount,
-    users: { total: userTotal, admins: adminCount },
+    users: {
+      total: userTotal,
+      admins: adminCount,
+      superAdminCount,
+      adminOnlyCount,
+      memberCount,
+      activeCount: activeUserCount,
+      inactiveCount: inactiveUserCount,
+    },
     favorites: favoriteCount,
     reviews: reviewCount,
     reports: { total: reportTotal, pending: reportPending },

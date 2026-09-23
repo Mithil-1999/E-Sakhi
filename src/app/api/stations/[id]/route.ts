@@ -18,7 +18,7 @@ export async function GET(_request: NextRequest, ctx: RouteContext<"/api/station
   const { id } = await ctx.params;
 
   const user = await getOptionalUser();
-  const includeDeleted = user?.role === "ADMIN";
+  const includeDeleted = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
 
   try {
     const station = await getStationById(id, includeDeleted);

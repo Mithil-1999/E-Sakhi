@@ -90,7 +90,7 @@ function AuthLinks({ user, stacked = false }: { user: SessionUser | null; stacke
   if (user) {
     return (
       <div className={stacked ? "flex flex-col gap-2" : "flex items-center gap-3"}>
-        {user.role === "ADMIN" && (
+        {(user.role === "ADMIN" || user.role === "SUPER_ADMIN") && (
           <Link
             href="/admin"
             className="inline-flex items-center gap-1 text-sm font-medium text-slate-700 hover:text-emerald-600 dark:text-slate-200 dark:hover:text-emerald-400"

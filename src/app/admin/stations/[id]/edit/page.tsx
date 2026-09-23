@@ -95,6 +95,11 @@ export default async function EditStationPage({ params }: PageProps<"/admin/stat
       <h1 className="mt-4 text-2xl font-bold text-slate-900 dark:text-white">
         Edit {clientStation.stationName}
       </h1>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        Created by: {station.createdBy?.name ?? "Not on record (seeded before audit tracking)"}
+        {" · "}
+        Last updated by: {station.updatedBy?.name ?? "Not on record"}
+      </p>
 
       <div className="mt-6 space-y-6">
         <AdminStationForm

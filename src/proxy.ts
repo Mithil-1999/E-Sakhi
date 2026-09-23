@@ -26,9 +26,14 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
   const isLoggedIn = Boolean(req.auth?.user);
   const role = req.auth?.user?.role;
+  const isAdminOrAbove = role === "ADMIN" || role === "SUPER_ADMIN";
 
   const isProtected = matchesPrefix(pathname, PROTECTED_PREFIXES);
   const isAdminRoute = matchesPrefix(pathname, ["/admin"]);
+  // User management is Super Admin only — a strict subset of /admin's own
+  // protection below, checked separately since a plain ADMIN legitimately
+  // passes the /admin check but must still be turned away from this one.
+  const isSuperAdminRoute = matchesPrefix(pathname, ["/admin/users"]);
 
   if (isProtected && !isLoggedIn) {
     const loginUrl = new URL("/login", req.nextUrl);
@@ -36,15 +41,22 @@ export default auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isAdminRoute && role !== "ADMIN") {
+  if (isAdminRoute && !isAdminOrAbove) {
     // Authenticated but not an admin (or not authenticated at all, which
     // the isProtected check above already sent to /login) — send non-admins
     // somewhere sane rather than exposing that the route exists.
     return NextResponse.redirect(new URL(isLoggedIn ? "/profile" : "/login", req.nextUrl));
   }
 
+  if (isSuperAdminRoute && role !== "SUPER_ADMIN") {
+    // An authenticated plain ADMIN (already past the check above) trying a
+    // Super-Admin-only URL directly — sent back to the dashboard they do
+    // have, not just bounced to /login.
+    return NextResponse.redirect(new URL("/admin", req.nextUrl));
+  }
+
   if (AUTH_PAGES.has(pathname) && isLoggedIn) {
-    return NextResponse.redirect(new URL("/profile", req.nextUrl));
+    return NextResponse.redirect(new URL(isAdminOrAbove ? "/admin" : "/dashboard", req.nextUrl));
   }
 
   return NextResponse.next();

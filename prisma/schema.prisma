@@ -16,11 +16,31 @@ datasource db {
 // Enums — fixed, controlled vocabularies. See docs/data-model.md §2.
 // ---------------------------------------------------------------------------
 
+// SUPER_ADMIN added by a later RBAC upgrade — the highest-privilege role,
+// a strict superset of ADMIN (see requireAdmin() in src/lib/auth/session.ts,
+// which treats SUPER_ADMIN as passing every ADMIN check too) plus exclusive
+// access to user management. USER is the public-facing "Member" role — kept
+// as USER at the database/enum level (not renamed) so every existing query,
+// check, and seed script that already compares against "USER" keeps working
+// unchanged; every UI surface labels it "Member".
 enum UserRole {
-  USER
+  SUPER_ADMIN
   ADMIN
+  USER
 
   @@map("user_role")
+}
+
+// Whether an account can sign in at all. A deactivated user's row and data
+// are never deleted — only login is blocked (checked in both
+// src/lib/auth/auth.ts's authorize() and re-verified against the live
+// database on every authenticated request via requireUser(), not just at
+// login — see src/lib/auth/session.ts).
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+
+  @@map("user_status")
 }
 
 enum VerificationStatus {
@@ -114,13 +134,16 @@ enum ReportStatus {
 // ---------------------------------------------------------------------------
 
 model User {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   name         String
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  role         UserRole @default(USER)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  email        String     @unique
+  /// Optional — collected via profile self-service, never at registration.
+  phone        String?
+  passwordHash String     @map("password_hash")
+  role         UserRole   @default(USER)
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
 
   favorites        Favorite[]
   reviews          Review[]
@@ -128,6 +151,8 @@ model User {
   verificationLogs VerificationLog[] @relation("VerificationLogAdmin")
   deletedStations  Station[]         @relation("StationDeletedBy")
   deletedChargers  Charger[]         @relation("ChargerDeletedBy")
+  createdStations  Station[]         @relation("StationCreatedBy")
+  updatedStations  Station[]         @relation("StationUpdatedBy")
 
   @@map("users")
 }
@@ -225,11 +250,20 @@ model Station {
   deletedAt   DateTime? @map("deleted_at")
   deletedById String?   @map("deleted_by")
 
+  // -- audit (later RBAC addition) — nullable so this stays a non-breaking
+  // migration for the ~460 seeded stations, which were bulk-imported by no
+  // particular admin. Set going forward by createStation()/updateStation()
+  // (src/services/station-service.ts) from the authenticated caller.
+  createdById String? @map("created_by")
+  updatedById String? @map("updated_by")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   operator  Operator? @relation(fields: [operatorId], references: [id])
   deletedBy User?     @relation("StationDeletedBy", fields: [deletedById], references: [id])
+  createdBy User?     @relation("StationCreatedBy", fields: [createdById], references: [id])
+  updatedBy User?     @relation("StationUpdatedBy", fields: [updatedById], references: [id])
 
   chargers         Charger[]
   favorites        Favorite[]

@@ -415,21 +415,24 @@ export async function applyImportEntries(
         const operatorId = entry.station.operatorName
           ? await resolveOrCreateOperatorId(entry.station.operatorName)
           : undefined;
-        const created = await createStation({
-          stationId: entry.externalStationId,
-          stationName: entry.station.stationName,
-          operatorId,
-          province: entry.station.province,
-          district: entry.station.district,
-          city: entry.station.city,
-          address: entry.station.address,
-          contact: entry.station.contact,
-          mapUrl: entry.station.mapUrl,
-          status: entry.station.status,
-          verificationStatus: entry.station.verificationStatus,
-          assumptionFlag: entry.station.assumptionFlag,
-          verificationSource: entry.station.verificationSource,
-        });
+        const created = await createStation(
+          {
+            stationId: entry.externalStationId,
+            stationName: entry.station.stationName,
+            operatorId,
+            province: entry.station.province,
+            district: entry.station.district,
+            city: entry.station.city,
+            address: entry.station.address,
+            contact: entry.station.contact,
+            mapUrl: entry.station.mapUrl,
+            status: entry.station.status,
+            verificationStatus: entry.station.verificationStatus,
+            assumptionFlag: entry.station.assumptionFlag,
+            verificationSource: entry.station.verificationSource,
+          },
+          adminId
+        );
         if (!created.ok) {
           stationResult.station = { status: "failed", reason: created.error };
           results.push(stationResult);

@@ -8,18 +8,20 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      role: "USER" | "ADMIN";
+      role: "SUPER_ADMIN" | "ADMIN" | "USER";
     } & DefaultSession["user"];
   }
 
   interface User {
-    role?: "USER" | "ADMIN";
+    role?: "SUPER_ADMIN" | "ADMIN" | "USER";
+    /** "Remember me" — only ever read once, inside the jwt callback, to size that token's expiry; never persisted anywhere else. */
+    remember?: boolean;
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
-    role?: "USER" | "ADMIN";
+    role?: "SUPER_ADMIN" | "ADMIN" | "USER";
   }
 }

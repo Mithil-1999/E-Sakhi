@@ -19,15 +19,15 @@ export async function GET(request: NextRequest) {
     return apiValidationError(parsed.error);
   }
 
-  // includeDeleted is only honored for an authenticated ADMIN — a non-admin
-  // (or anonymous) caller passing it is silently treated as false rather
-  // than rejected, so the param's existence isn't itself a signal leaked
-  // to unauthenticated callers.
+  // includeDeleted is only honored for an authenticated ADMIN or
+  // SUPER_ADMIN — a non-admin (or anonymous) caller passing it is silently
+  // treated as false rather than rejected, so the param's existence isn't
+  // itself a signal leaked to unauthenticated callers.
   const query = parsed.data;
   let includeDeleted = false;
   if (query.includeDeleted) {
     const user = await getOptionalUser();
-    includeDeleted = user?.role === "ADMIN";
+    includeDeleted = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
   }
 
   try {
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result = await createStation(parsed.data);
+    const result = await createStation(parsed.data, auth.user.id);
     if (!result.ok) {
       return apiErrorFromStatus(result.error, result.status);
     }

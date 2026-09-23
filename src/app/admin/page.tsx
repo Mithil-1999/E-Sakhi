@@ -7,6 +7,7 @@ import {
   Heart,
   MapPin,
   Plug,
+  PlusCircle,
   Shield,
   ShieldCheck,
   Star,
@@ -47,20 +48,34 @@ export default async function AdminPage() {
   // never rely on the proxy redirect alone. See docs/architecture.md §3/§10.
   const admin = await requireAdmin();
 
+  const isSuperAdmin = admin.role === "SUPER_ADMIN";
+
   const [stats, recentActivity] = await Promise.all([
-    getAdminDashboardStats(),
+    getAdminDashboardStats(admin.id),
     getRecentVerificationActivity(15),
   ]);
 
+  const activeStations = stats.stations.byStatus.find((s) => s.status === "ACTIVE")?.count ?? 0;
+  const inactiveStations = stats.stations.byStatus.find((s) => s.status === "INACTIVE")?.count ?? 0;
+
   const statCards = [
-    { label: "Stations", value: stats.stations.total, icon: MapPin, href: "/admin/stations" },
+    { label: "Total EV Stations", value: stats.stations.total, icon: MapPin, href: "/admin/stations" },
+    { label: "Active Stations", value: activeStations, icon: MapPin },
+    { label: "Inactive Stations", value: inactiveStations, icon: MapPin },
+    { label: "Stations Added by You", value: stats.stations.createdByActingUser, icon: PlusCircle },
     { label: "Chargers", value: stats.chargers.total, icon: Plug },
     { label: "Operators", value: stats.operators, icon: Zap },
     { label: "Connectors", value: stats.connectors, icon: Battery },
-    { label: "Users", value: stats.users.total, icon: UsersIcon },
     { label: "Favorites", value: stats.favorites, icon: Heart },
     { label: "Reviews", value: stats.reviews, icon: Star },
     { label: "Reports", value: stats.reports.total, icon: Flag, href: "/admin/reports" },
+    ...(isSuperAdmin
+      ? [
+          { label: "Total Users", value: stats.users.total, icon: UsersIcon, href: "/admin/users" },
+          { label: "Total Admins", value: stats.users.adminOnlyCount, icon: ShieldCheck, href: "/admin/users?role=ADMIN" },
+          { label: "Total Members", value: stats.users.memberCount, icon: UsersIcon, href: "/admin/users?role=USER" },
+        ]
+      : [{ label: "Users", value: stats.users.total, icon: UsersIcon }]),
   ];
 
   const maxVerificationCount = Math.max(1, ...stats.verificationDistribution.map((v) => v.count));
@@ -73,7 +88,9 @@ export default async function AdminPage() {
             <Shield className="h-5 w-5" aria-hidden="true" />
           </span>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Admin Dashboard</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+              {isSuperAdmin ? "Super Admin Dashboard" : "Admin Dashboard"}
+            </h1>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
               Signed in as {admin.name ?? admin.email}. Every number below is computed live from the
               database, not cached or hard-coded.
@@ -81,6 +98,15 @@ export default async function AdminPage() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          {isSuperAdmin && (
+            <Link
+              href="/admin/users"
+              className="inline-flex items-center gap-2 rounded-lg border border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
+            >
+              <UsersIcon className="h-4 w-4" aria-hidden="true" />
+              Manage Users
+            </Link>
+          )}
           <Link
             href="/admin/import"
             className="inline-flex items-center gap-2 rounded-lg border border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"

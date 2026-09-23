@@ -101,8 +101,14 @@ The six connector types from the spec are seeded as the initial `Connector` rows
 id                PK
 name
 email             unique, required
+phone             nullable — self-service profile field, see §14 of architecture.md
 password_hash     required, never exposed via any API response
-role              UserRole, default USER
+role              UserRole (SUPER_ADMIN | ADMIN | USER), default USER — "USER" is labeled
+                  "Member" in every UI surface; the enum value itself was deliberately
+                  not renamed (see prisma/schema.prisma's own comment and
+                  docs/architecture.md §14)
+status            UserStatus (ACTIVE | INACTIVE), default ACTIVE — a deactivated
+                  account is never deleted, only blocked from signing in
 created_at
 updated_at
 ```
@@ -152,6 +158,11 @@ availability_verified     boolean, default false
 is_deleted                boolean, default false
 deleted_at                 timestamp, nullable
 deleted_by                  FK → User, nullable
+
+-- audit (RBAC upgrade addition, docs/architecture.md §14) --
+created_by                  FK → User, nullable — NULL for the ~460 seeded
+                            stations, which predate this field
+updated_by                  FK → User, nullable
 
 created_at
 updated_at
