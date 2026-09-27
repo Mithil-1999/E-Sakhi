@@ -12,8 +12,8 @@ export function Hero() {
           हर यात्रा मे अहाँक संग
         </p>
         <p className="mt-6 max-w-2xl text-lg text-slate-600 dark:text-slate-300">
-          Find EV charging stations across Nepal and get smart charging
-          recommendations based on your vehicle and battery level.
+          Find EV charging stations across Nepal, check which ones fit your
+          vehicle, and plan a journey with real charging stops along the way.
         </p>
 
         <div className="mt-10 flex flex-col gap-4 sm:flex-row">

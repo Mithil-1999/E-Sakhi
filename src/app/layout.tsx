@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: "%s — E Sakhi",
   },
   description:
-    "Find EV charging stations across Nepal and get smart charging recommendations based on your vehicle and battery level.",
+    "Find EV charging stations across Nepal, check which ones fit your vehicle, and plan a journey with real charging stops along the way.",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

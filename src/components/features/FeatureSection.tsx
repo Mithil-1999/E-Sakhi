@@ -23,9 +23,9 @@ const features: Feature[] = [
   },
   {
     icon: Sparkles,
-    title: "Smart recommendations",
+    title: "Compatible stations near you",
     description:
-      "Compare stations ranked by compatibility, distance, charging power, and rating — not just which one is nearest.",
+      "See every station that matches your vehicle's connector within the distance you choose, sorted nearest first, with charging power and mode shown clearly.",
   },
 ];
 
