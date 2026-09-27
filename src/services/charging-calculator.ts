@@ -114,6 +114,17 @@ export type ChargingEstimate = {
 export const CHARGING_ESTIMATE_CAVEAT =
   "This is a simplified estimate that assumes constant charging power for the whole session. Real charging — especially DC fast charging — usually slows down above about 80% battery, so an actual session may take longer than shown.";
 
+/**
+ * Range at a given battery percentage, assuming range scales linearly
+ * with charge — the same simplifying assumption the calculator's own
+ * range estimate below uses. Pulled out as its own export so E Sakhi
+ * Marg's range-aware checkpoint selection (src/services/marg-service.ts)
+ * reuses this exact formula instead of re-deriving it.
+ */
+export function estimateCurrentRangeKm(fullRangeKm: number, currentPercent: number): number {
+  return round((fullRangeKm * currentPercent) / 100, 1);
+}
+
 function round(value: number, decimals: number): number {
   const factor = 10 ** decimals;
   return Math.round(value * factor) / factor;
@@ -155,7 +166,7 @@ export function calculateChargingEstimate(
   const range =
     vehicle.fullRangeKm != null && vehicle.fullRangeKm > 0
       ? {
-          currentRangeKm: round((vehicle.fullRangeKm * currentPercent) / 100, 1),
+          currentRangeKm: estimateCurrentRangeKm(vehicle.fullRangeKm, currentPercent),
           rangeAddedKm: round((vehicle.fullRangeKm * (targetPercent - currentPercent)) / 100, 1),
           targetRangeKm: round((vehicle.fullRangeKm * targetPercent) / 100, 1),
         }

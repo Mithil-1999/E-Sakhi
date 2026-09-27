@@ -28,13 +28,55 @@ export type DrivingRoute = {
 
 const OSRM_BASE_URL = "https://router.project-osrm.org/route/v1/driving";
 
-export async function fetchDrivingRoute(
-  from: LatLng,
-  to: LatLng
-): Promise<DrivingRoute | null> {
+// A hard cap on how many of OSRM's alternatives we ever act on — this is a
+// display/complexity limit for the UI (route cards), not a claim that only
+// three routes exist between two points. OSRM itself may return fewer (its
+// alternative-route search only returns a route when it's a genuinely
+// different one within its own tolerance — see the OSRM API docs — so
+// "only one route" is an expected, honest outcome for some origin/
+// destination pairs, not a bug).
+const MAX_ROUTES = 3;
+
+// Two OSRM "alternatives" that agree this closely in both distance and
+// duration are, in practice, the same road with a rounding-level
+// difference — not a second option worth showing the driver. Purely a
+// de-duplication heuristic on OSRM's own numbers, never a judgement about
+// which real route is "better".
+const DUPLICATE_DISTANCE_KM = 1.5;
+const DUPLICATE_DURATION_MIN = 3;
+
+function parseRoute(route: {
+  distance: number;
+  duration: number;
+  geometry: { coordinates: [number, number][] };
+}): DrivingRoute {
+  // GeoJSON coordinates are [lng, lat] — flip to this app's [lat, lng] convention everywhere else.
+  const geometry: [number, number][] = route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+  return {
+    distanceKm: route.distance / 1000,
+    durationMin: route.duration / 60,
+    geometry,
+    cumulativeKm: buildCumulativeDistances(geometry),
+  };
+}
+
+function isDuplicateRoute(a: DrivingRoute, b: DrivingRoute): boolean {
+  return (
+    Math.abs(a.distanceKm - b.distanceKm) < DUPLICATE_DISTANCE_KM &&
+    Math.abs(a.durationMin - b.durationMin) < DUPLICATE_DURATION_MIN
+  );
+}
+
+/**
+ * Every real driving route OSRM offers between two points, most direct
+ * first — up to MAX_ROUTES, after dropping near-identical alternatives.
+ * Never fabricates a second route: if OSRM has only one real option (or
+ * none), the returned array reflects that honestly.
+ */
+export async function fetchDrivingRoutes(from: LatLng, to: LatLng): Promise<DrivingRoute[]> {
   const url =
     `${OSRM_BASE_URL}/${from.longitude},${from.latitude};${to.longitude},${to.latitude}` +
-    `?overview=full&geometries=geojson`;
+    `?overview=full&geometries=geojson&alternatives=true`;
 
   let response: Response;
   try {
@@ -42,28 +84,30 @@ export async function fetchDrivingRoute(
       headers: { "User-Agent": "e-sakhi-marg/1.0 (EV route planning, student project)" },
     });
   } catch {
-    return null;
+    return [];
   }
-  if (!response.ok) return null;
+  if (!response.ok) return [];
 
   const body = (await response.json()) as {
     code: string;
     routes?: { distance: number; duration: number; geometry: { coordinates: [number, number][] } }[];
   };
-  if (body.code !== "Ok" || !body.routes || body.routes.length === 0) return null;
+  if (body.code !== "Ok" || !body.routes || body.routes.length === 0) return [];
 
-  const route = body.routes[0];
-  // GeoJSON coordinates are [lng, lat] — flip to this app's [lat, lng] convention everywhere else.
-  const geometry: [number, number][] = route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+  const routes: DrivingRoute[] = [];
+  for (const raw of body.routes) {
+    if (routes.length >= MAX_ROUTES) break;
+    const parsed = parseRoute(raw);
+    if (routes.some((r) => isDuplicateRoute(r, parsed))) continue;
+    routes.push(parsed);
+  }
+  return routes;
+}
 
-  const cumulativeKm = buildCumulativeDistances(geometry);
-
-  return {
-    distanceKm: route.distance / 1000,
-    durationMin: route.duration / 60,
-    geometry,
-    cumulativeKm,
-  };
+/** @deprecated Use fetchDrivingRoutes — kept only as a thin single-route wrapper in case something else needs it. */
+export async function fetchDrivingRoute(from: LatLng, to: LatLng): Promise<DrivingRoute | null> {
+  const routes = await fetchDrivingRoutes(from, to);
+  return routes[0] ?? null;
 }
 
 function toRadians(degrees: number): number {

@@ -26,6 +26,15 @@ export const MargPlanSchema = z.object({
   destLongitude: z.coerce.number().min(-180).max(180),
   connector: z.string().trim().min(1).max(50),
   chargingMode: z.enum(["AC", "DC"]).optional(),
+  // Battery-aware planning is entirely optional — all three fields are
+  // optional and, when omitted, E Sakhi Marg behaves exactly as before
+  // (evenly-spaced checkpoints). vehicleId reuses a real Vehicle row's
+  // fullRangeKm; fullRangeKm lets a guest without a matching preset type
+  // their own manufacturer-published range instead. Never both required —
+  // resolution/fallback happens in the service layer, not here.
+  vehicleId: z.string().trim().min(1).optional(),
+  fullRangeKm: z.coerce.number().positive().max(2000).optional(),
+  currentBatteryPercent: z.coerce.number().min(0).max(100).optional(),
 });
 
 export type MargPlanInput = z.infer<typeof MargPlanSchema>;

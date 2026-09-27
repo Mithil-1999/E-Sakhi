@@ -12,17 +12,23 @@ import {
   CheckCircle2,
   Circle,
   AlertTriangle,
+  Clock,
+  Route as RouteIcon,
+  Info,
+  BatteryCharging,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SELECTABLE_CONNECTORS } from "@/services/connector-service";
-import type { MargMapMarker, FlyToTarget } from "@/components/map/MapProvider";
+import type { MargMapMarker, MargRouteLine, FlyToTarget } from "@/components/map/MapProvider";
 import type {
-  MargRoute,
+  MargRouteOption,
   MargCheckpoint,
+  MargPlanResult,
   MargGeocodeApiResponse,
   MargPlanApiResponse,
   MargApiErrorResponse,
 } from "@/types/marg";
+import type { VehicleListItem } from "@/types/vehicle";
 
 // Leaflet touches `window` at import time and cannot be server-rendered —
 // loaded client-only, same pattern as MapExplorer.tsx.
@@ -40,13 +46,15 @@ const StationMap = dynamic(
 
 const NEPAL_CENTER: [number, number] = [28.3949, 84.124];
 const NEPAL_ZOOM = 7;
+const CUSTOM_RANGE_ID = "__custom_range__";
+const NO_VEHICLE_ID = "";
 
 const inputClass =
   "mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900";
 
 type PlacePoint = { label: string; latitude: number; longitude: number };
 
-/** Bounding box around every point on a route's geometry — used to fit the whole journey in view at once. */
+/** Bounding box around every point on a route's geometry — used to fit that route in view. */
 function routeBounds(geometry: [number, number][]): [[number, number], [number, number]] {
   const lats = geometry.map((p) => p[0]);
   const lngs = geometry.map((p) => p[1]);
@@ -56,15 +64,18 @@ function routeBounds(geometry: [number, number][]): [[number, number], [number, 
   ];
 }
 
+function formatDuration(totalMinutes: number): string {
+  const rounded = Math.round(totalMinutes);
+  const hours = Math.floor(rounded / 60);
+  const mins = rounded % 60;
+  if (hours === 0) return `${mins} min`;
+  if (mins === 0) return `${hours} hr`;
+  return `${hours} hr ${mins} min`;
+}
+
 type GeoStatus = "idle" | "locating" | "denied" | "unsupported";
 
-const LOADING_STEPS = [
-  "Finding route",
-  "Checking charging stations",
-  "Matching connector type",
-  "Checking charging options",
-  "Building your journey",
-] as const;
+const LOADING_STEPS = ["Finding routes", "Finding EV charging stations", "Analyzing charging opportunities"] as const;
 
 const AVAILABILITY_LABELS: Record<MargCheckpoint["availability"], string> = {
   AVAILABLE: "Available",
@@ -81,22 +92,18 @@ const AVAILABILITY_STYLES: Record<MargCheckpoint["availability"], string> = {
 };
 
 /**
- * E Sakhi Marg — the EV journey/route planner (originally built as a new,
- * separate feature alongside the "Find Chargers" station search at
- * /stations; that list page was later removed entirely by product
- * decision — see README.md's "Find Chargers" note — while /stations/[id]
- * station detail pages, the underlying GET /api/stations data, and this
- * page all remain unaffected). Client-interactive for the same
- * reason ChargingCalculatorTool.tsx/RecommendationTool.tsx are: real-time
- * input collection, geolocation, and a big interactive map, not a
- * shareable/bookmarkable filtered list (docs/architecture.md §4). All
- * routing/checkpoint logic is computed server-side by
- * src/services/marg-service.ts via POST /api/marg/plan — this component
- * only collects input and renders the real result, including its own
- * honest gaps (no route found, no compatible station, unknown live
- * status), never a placeholder pretending to be real data.
+ * E Sakhi Marg — the EV journey/route planner. Plans against every real
+ * alternative route OSRM offers (up to three — src/services/
+ * marg-service.ts), lets the visitor compare them, and shows a real,
+ * connector-matched charging plan for whichever one they select. All
+ * routing/checkpoint logic is computed server-side via POST /api/marg/
+ * plan — this component only collects input (including the optional
+ * vehicle/battery fields used for range-aware spacing) and renders the
+ * real result, including its own honest gaps (no route found, a route
+ * with no compatible station, a route a given battery can't fully cover),
+ * never a placeholder pretending to be real data.
  */
-export function MargPlanner() {
+export function MargPlanner({ vehicles }: { vehicles: VehicleListItem[] }) {
   const [startQuery, setStartQuery] = useState("");
   const [startResults, setStartResults] = useState<PlacePoint[]>([]);
   const [startPoint, setStartPoint] = useState<PlacePoint | null>(null);
@@ -109,10 +116,18 @@ export function MargPlanner() {
   const [connector, setConnector] = useState(SELECTABLE_CONNECTORS[0]?.code ?? "");
   const [chargingMode, setChargingMode] = useState<"" | "AC" | "DC">("");
 
+  // Optional vehicle & battery — entirely optional; when left unset, E
+  // Sakhi Marg plans exactly as it always has (evenly-spaced checkpoints).
+  const [vehicleId, setVehicleId] = useState<string>(NO_VEHICLE_ID);
+  const [customRangeKm, setCustomRangeKm] = useState("");
+  const [batteryPercent, setBatteryPercent] = useState("");
+
   const [planState, setPlanState] = useState<"idle" | "loading" | "error" | "success">("idle");
   const [loadingStep, setLoadingStep] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [route, setRoute] = useState<MargRoute | null>(null);
+  const [plan, setPlan] = useState<MargPlanResult | null>(null);
+  const [viewedRouteId, setViewedRouteId] = useState<string | null>(null);
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [selectedCheckpointId, setSelectedCheckpointId] = useState<string | null>(null);
   const [flyTo, setFlyTo] = useState<FlyToTarget | null>(null);
 
@@ -188,6 +203,25 @@ export function MargPlanner() {
     );
   }, []);
 
+  // Resolved vehicle range for the currently chosen vehicle/custom entry —
+  // null whenever there's nothing real to use (no vehicle picked, a
+  // picked vehicle with no range on record, or an empty/invalid custom
+  // value). Drives whether the battery % field is usable at all.
+  const resolvedRangeKm = useMemo(() => {
+    if (vehicleId === CUSTOM_RANGE_ID) {
+      const n = Number(customRangeKm);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    }
+    if (vehicleId) {
+      const v = vehicles.find((x) => x.id === vehicleId);
+      return v?.fullRangeKm ?? null;
+    }
+    return null;
+  }, [vehicleId, customRangeKm, vehicles]);
+
+  const batteryPercentNum = batteryPercent.trim() === "" ? null : Number(batteryPercent);
+  const canUseRangeAwarePlanning = resolvedRangeKm !== null;
+
   const canPlan = startPoint !== null && destPoint !== null && connector !== "";
 
   async function handlePlan() {
@@ -195,14 +229,16 @@ export function MargPlanner() {
 
     setPlanState("loading");
     setErrorMessage(null);
-    setRoute(null);
+    setPlan(null);
+    setViewedRouteId(null);
+    setSelectedRouteId(null);
     setSelectedCheckpointId(null);
     setLoadingStep(0);
 
     if (loadingTimer.current) clearInterval(loadingTimer.current);
     loadingTimer.current = setInterval(() => {
       setLoadingStep((step) => Math.min(step + 1, LOADING_STEPS.length - 1));
-    }, 550);
+    }, 700);
 
     try {
       const res = await fetch("/api/marg/plan", {
@@ -217,6 +253,12 @@ export function MargPlanner() {
           destLongitude: destPoint.longitude,
           connector,
           chargingMode: chargingMode || undefined,
+          vehicleId: vehicleId && vehicleId !== CUSTOM_RANGE_ID ? vehicleId : undefined,
+          fullRangeKm: vehicleId === CUSTOM_RANGE_ID && resolvedRangeKm ? resolvedRangeKm : undefined,
+          currentBatteryPercent:
+            canUseRangeAwarePlanning && batteryPercentNum !== null && Number.isFinite(batteryPercentNum)
+              ? batteryPercentNum
+              : undefined,
         }),
       });
 
@@ -225,9 +267,14 @@ export function MargPlanner() {
         throw new Error(body.error?.message ?? "Could not plan this journey.");
       }
       const body = (await res.json()) as MargPlanApiResponse;
-      setRoute(body.data);
+      setPlan(body.data);
       setPlanState("success");
-      setFlyTo({ bounds: routeBounds(body.data.geometry) });
+      const first = body.data.routes[0];
+      if (first) {
+        setViewedRouteId(first.id);
+        setSelectedRouteId(first.id);
+        setFlyTo({ bounds: routeBounds(first.geometry) });
+      }
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Could not plan this journey.");
       setPlanState("error");
@@ -242,22 +289,49 @@ export function MargPlanner() {
     };
   }, []);
 
+  function viewRoute(route: MargRouteOption) {
+    setViewedRouteId(route.id);
+    setSelectedCheckpointId(null);
+    setFlyTo({ bounds: routeBounds(route.geometry) });
+  }
+
+  function selectRoute(route: MargRouteOption) {
+    setViewedRouteId(route.id);
+    setSelectedRouteId(route.id);
+    setSelectedCheckpointId(null);
+    setFlyTo({ bounds: routeBounds(route.geometry) });
+  }
+
   function selectCheckpoint(id: string, position: [number, number]) {
     setSelectedCheckpointId(id);
     setFlyTo({ position, zoom: 12 });
   }
 
+  const viewedRoute = useMemo(
+    () => plan?.routes.find((r) => r.id === viewedRouteId) ?? null,
+    [plan, viewedRouteId]
+  );
+  const selectedRoute = useMemo(
+    () => plan?.routes.find((r) => r.id === selectedRouteId) ?? null,
+    [plan, selectedRouteId]
+  );
+
+  const margRouteLines: MargRouteLine[] = useMemo(
+    () => (plan?.routes ?? []).map((r) => ({ id: r.id, geometry: r.geometry, selected: r.id === viewedRouteId })),
+    [plan, viewedRouteId]
+  );
+
   const margMarkers: MargMapMarker[] = useMemo(() => {
-    if (!route) return [];
+    if (!plan || !viewedRoute) return [];
     const list: MargMapMarker[] = [
       {
         id: "start",
         kind: "start",
-        position: [route.start.latitude, route.start.longitude],
-        popup: <div className="text-sm font-medium">📍 {route.startLabel}</div>,
+        position: [plan.start.latitude, plan.start.longitude],
+        popup: <div className="text-sm font-medium">📍 {plan.startLabel}</div>,
       },
     ];
-    route.checkpoints.forEach((cp, index) => {
+    viewedRoute.checkpoints.forEach((cp, index) => {
       list.push({
         id: cp.stationId,
         kind: "checkpoint",
@@ -269,23 +343,23 @@ export function MargPlanner() {
     list.push({
       id: "destination",
       kind: "destination",
-      position: [route.destination.latitude, route.destination.longitude],
-      popup: <div className="text-sm font-medium">🏁 {route.destLabel}</div>,
+      position: [plan.destination.latitude, plan.destination.longitude],
+      popup: <div className="text-sm font-medium">🏁 {plan.destLabel}</div>,
     });
     return list;
-  }, [route]);
+  }, [plan, viewedRoute]);
 
-  const mapCenter = route ? [route.start.latitude, route.start.longitude] as [number, number] : NEPAL_CENTER;
-  const mapZoom = route ? 8 : NEPAL_ZOOM;
+  const mapCenter = plan ? ([plan.start.latitude, plan.start.longitude] as [number, number]) : NEPAL_CENTER;
+  const mapZoom = plan ? 8 : NEPAL_ZOOM;
 
   return (
     <div className="grid grid-cols-1 gap-0 lg:h-[calc(100vh-4rem)] lg:grid-cols-[440px_1fr]">
-      {/* Map — first in DOM on mobile (per spec §15's mobile layout), second on desktop */}
+      {/* Map — first in DOM on mobile, second on desktop */}
       <div className="order-first h-[45vh] lg:order-none lg:h-full">
         <StationMap
           markers={[]}
           margMarkers={margMarkers}
-          margRoute={route?.geometry ?? null}
+          margRoutes={margRouteLines}
           center={mapCenter}
           zoom={mapZoom}
           flyTo={flyTo}
@@ -303,7 +377,7 @@ export function MargPlanner() {
           E Sakhi Marg
         </h1>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          Tell us where you&apos;re going, and E Sakhi finds the charging checkpoints along your journey.
+          Tell us where you&apos;re going, and E Sakhi finds route options with charging checkpoints along the way.
         </p>
 
         {planState !== "success" && (
@@ -386,6 +460,17 @@ export function MargPlanner() {
               </select>
             </div>
 
+            <VehicleBatteryFields
+              vehicles={vehicles}
+              vehicleId={vehicleId}
+              onVehicleChange={setVehicleId}
+              customRangeKm={customRangeKm}
+              onCustomRangeChange={setCustomRangeKm}
+              batteryPercent={batteryPercent}
+              onBatteryChange={setBatteryPercent}
+              resolvedRangeKm={resolvedRangeKm}
+            />
+
             <Button
               type="button"
               className="w-full"
@@ -398,8 +483,8 @@ export function MargPlanner() {
 
             {planState === "idle" && (
               <div className="rounded-xl border border-dashed border-slate-300 p-4 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-                Plan Your E Sakhi Marg — enter your starting point and destination to discover
-                suitable EV charging checkpoints along your journey.
+                Plan Your E Sakhi Marg — enter your starting point and destination to see route
+                options with EV charging checkpoints along the way.
               </div>
             )}
 
@@ -414,14 +499,21 @@ export function MargPlanner() {
           </div>
         )}
 
-        {planState === "success" && route && (
+        {planState === "success" && plan && (
           <MargResult
-            route={route}
+            plan={plan}
+            viewedRouteId={viewedRouteId}
+            selectedRoute={selectedRoute}
+            batteryPercentLabel={canUseRangeAwarePlanning && batteryPercentNum !== null ? batteryPercent : null}
+            onViewRoute={viewRoute}
+            onSelectRoute={selectRoute}
             selectedCheckpointId={selectedCheckpointId}
             onSelectCheckpoint={selectCheckpoint}
             onPlanAnother={() => {
               setPlanState("idle");
-              setRoute(null);
+              setPlan(null);
+              setViewedRouteId(null);
+              setSelectedRouteId(null);
               setSelectedCheckpointId(null);
             }}
           />
@@ -495,6 +587,115 @@ function PlaceField({
   );
 }
 
+/**
+ * Entirely optional — reuses the same "pick a reference vehicle, or enter
+ * your own" pattern already used by ChargingCalculatorTool/
+ * RecommendationTool, trimmed down to just what range-aware checkpoint
+ * spacing needs (a full-charge range + a current battery level). Never
+ * required to plan a journey; leaving it alone reproduces E Sakhi Marg's
+ * original fixed-spacing behavior exactly.
+ */
+function VehicleBatteryFields({
+  vehicles,
+  vehicleId,
+  onVehicleChange,
+  customRangeKm,
+  onCustomRangeChange,
+  batteryPercent,
+  onBatteryChange,
+  resolvedRangeKm,
+}: {
+  vehicles: VehicleListItem[];
+  vehicleId: string;
+  onVehicleChange: (id: string) => void;
+  customRangeKm: string;
+  onCustomRangeChange: (v: string) => void;
+  batteryPercent: string;
+  onBatteryChange: (v: string) => void;
+  resolvedRangeKm: number | null;
+}) {
+  const pickedVehicle = vehicles.find((v) => v.id === vehicleId);
+  const rangeUnknownForPickedVehicle = Boolean(vehicleId) && vehicleId !== CUSTOM_RANGE_ID && !pickedVehicle?.fullRangeKm;
+
+  return (
+    <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+      <p className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-200">
+        <BatteryCharging className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+        Vehicle &amp; Battery <span className="font-normal text-slate-400">(optional)</span>
+      </p>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        Add your vehicle&apos;s range and current battery level to space charging stops around what
+        your battery can actually reach. Leave this blank for the standard journey plan.
+      </p>
+
+      <label htmlFor="marg-vehicle" className="mt-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
+        Vehicle
+      </label>
+      <select
+        id="marg-vehicle"
+        value={vehicleId}
+        onChange={(e) => onVehicleChange(e.target.value)}
+        className={inputClass}
+      >
+        <option value={NO_VEHICLE_ID}>No vehicle — standard journey plan</option>
+        {vehicles.map((v) => (
+          <option key={v.id} value={v.id}>
+            {v.brand} {v.model}
+            {v.fullRangeKm ? ` — ${v.fullRangeKm} km range` : " — range not on record"}
+          </option>
+        ))}
+        <option value={CUSTOM_RANGE_ID}>Custom — enter a full-charge range</option>
+      </select>
+
+      {rangeUnknownForPickedVehicle && (
+        <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+          This vehicle&apos;s range isn&apos;t on record — showing the standard journey plan.
+        </p>
+      )}
+
+      {vehicleId === CUSTOM_RANGE_ID && (
+        <div className="mt-3">
+          <label htmlFor="marg-custom-range" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+            Full-charge range (km)
+          </label>
+          <input
+            id="marg-custom-range"
+            type="number"
+            min={1}
+            value={customRangeKm}
+            onChange={(e) => onCustomRangeChange(e.target.value)}
+            placeholder="e.g. 400"
+            className={inputClass}
+          />
+        </div>
+      )}
+
+      {resolvedRangeKm !== null && (
+        <div className="mt-3">
+          <label htmlFor="marg-battery" className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+            Current battery (%)
+          </label>
+          <input
+            id="marg-battery"
+            type="number"
+            min={0}
+            max={100}
+            value={batteryPercent}
+            onChange={(e) => onBatteryChange(e.target.value)}
+            placeholder="e.g. 65"
+            className={inputClass}
+          />
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+            Estimated range right now: {batteryPercent.trim() !== "" && Number.isFinite(Number(batteryPercent))
+              ? `${Math.round((resolvedRangeKm * Number(batteryPercent)) / 100)} km`
+              : "enter a battery level"}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function LoadingChecklist({ step }: { step: number }) {
   return (
     <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-800">
@@ -513,7 +714,7 @@ function LoadingChecklist({ step }: { step: number }) {
               <Circle className="h-4 w-4 shrink-0 text-slate-300 dark:text-slate-700" aria-hidden="true" />
             )}
             <span className={i <= step ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-600"}>
-              {label}
+              {label}…
             </span>
           </li>
         ))}
@@ -535,35 +736,40 @@ function CheckpointPopup({ checkpoint, index }: { checkpoint: MargCheckpoint; in
 }
 
 function MargResult({
-  route,
+  plan,
+  viewedRouteId,
+  selectedRoute,
+  batteryPercentLabel,
+  onViewRoute,
+  onSelectRoute,
   selectedCheckpointId,
   onSelectCheckpoint,
   onPlanAnother,
 }: {
-  route: MargRoute;
+  plan: MargPlanResult;
+  viewedRouteId: string | null;
+  selectedRoute: MargRouteOption | null;
+  batteryPercentLabel: string | null;
+  onViewRoute: (route: MargRouteOption) => void;
+  onSelectRoute: (route: MargRouteOption) => void;
   selectedCheckpointId: string | null;
   onSelectCheckpoint: (id: string, position: [number, number]) => void;
   onPlanAnother: () => void;
 }) {
-  const connectorLabel = SELECTABLE_CONNECTORS.find((c) => c.code === route.connector)?.label ?? route.connector;
-  const modeLabel = route.chargingMode === "AC" ? "AC Charging" : route.chargingMode === "DC" ? "DC Fast Charging" : "AC or DC";
+  const connectorLabel = SELECTABLE_CONNECTORS.find((c) => c.code === plan.connector)?.label ?? plan.connector;
+  const modeLabel = plan.chargingMode === "AC" ? "AC Charging" : plan.chargingMode === "DC" ? "DC Fast Charging" : "AC or DC";
 
   return (
     <div className="mt-6 space-y-6">
-      {/* Route summary */}
       <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
         <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Your E Sakhi Marg</h2>
         <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">
-          {route.startLabel} → {route.destLabel}
+          {plan.startLabel} → {plan.destLabel}
         </p>
         <dl className="mt-3 grid grid-cols-2 gap-3 text-xs">
           <div>
-            <dt className="text-slate-500 dark:text-slate-400">Total Distance</dt>
-            <dd className="font-semibold text-slate-900 dark:text-white">{route.totalDistanceKm} km</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500 dark:text-slate-400">Charging Stops</dt>
-            <dd className="font-semibold text-slate-900 dark:text-white">{route.checkpoints.length}</dd>
+            <dt className="text-slate-500 dark:text-slate-400">Route Options</dt>
+            <dd className="font-semibold text-slate-900 dark:text-white">{plan.routes.length}</dd>
           </div>
           <div>
             <dt className="text-slate-500 dark:text-slate-400">Connector</dt>
@@ -573,11 +779,17 @@ function MargResult({
             <dt className="text-slate-500 dark:text-slate-400">Charging Mode</dt>
             <dd className="font-semibold text-slate-900 dark:text-white">{modeLabel}</dd>
           </div>
+          {plan.rangeAware && (
+            <div>
+              <dt className="text-slate-500 dark:text-slate-400">Battery-aware planning</dt>
+              <dd className="font-semibold text-slate-900 dark:text-white">On</dd>
+            </div>
+          )}
         </dl>
-        {route.checkpoints.length === 0 && (
-          <p className="mt-3 text-xs text-slate-600 dark:text-slate-400">
-            This journey is short enough that no charging stop was needed — E Sakhi still shows the
-            complete route below.
+        {plan.routes.length === 1 && (
+          <p className="mt-3 flex items-start gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            Only one route was found between these locations.
           </p>
         )}
         <button
@@ -589,52 +801,205 @@ function MargResult({
         </button>
       </div>
 
-      {/* Timeline */}
+      {/* Route comparison cards */}
       <div>
-        <h3 className="mb-3 text-sm font-semibold text-slate-900 dark:text-white">Journey Timeline</h3>
-        <ol className="relative space-y-0 border-l-2 border-slate-200 pl-5 dark:border-slate-800">
-          <TimelineNode
-            icon="📍"
-            title="START"
-            subtitle={route.startLabel}
-          />
-          {route.checkpoints.map((cp, index) => (
-            <TimelineSegment
-              key={cp.stationId}
-              distanceKm={cp.distanceFromPreviousKm}
-            >
-              <TimelineNode
-                icon="⚡"
-                title={`CHECKPOINT ${index + 1}`}
-                subtitle={cp.stationName}
-                selected={selectedCheckpointId === cp.stationId}
-                onClick={() => onSelectCheckpoint(cp.stationId, [cp.latitude, cp.longitude])}
-              />
-            </TimelineSegment>
+        <h3 className="mb-3 text-sm font-semibold text-slate-900 dark:text-white">Route Options</h3>
+        <div className="space-y-3">
+          {plan.routes.map((route) => (
+            <RouteCard
+              key={route.id}
+              route={route}
+              connectorLabel={connectorLabel}
+              viewed={route.id === viewedRouteId}
+              selected={route.id === selectedRoute?.id}
+              onView={() => onViewRoute(route)}
+              onSelect={() => onSelectRoute(route)}
+            />
           ))}
-          <TimelineSegment distanceKm={route.finalLegKm}>
-            <TimelineNode icon="🏁" title="DESTINATION" subtitle={route.destLabel} isLast />
-          </TimelineSegment>
-        </ol>
+        </div>
       </div>
 
-      {/* Checkpoint cards */}
-      {route.checkpoints.length > 0 && (
-        <div>
-          <h3 className="mb-3 text-sm font-semibold text-slate-900 dark:text-white">Charging Checkpoints</h3>
-          <div className="space-y-3">
-            {route.checkpoints.map((cp, index) => (
-              <CheckpointCard
-                key={cp.stationId}
-                checkpoint={cp}
-                index={index}
-                selected={selectedCheckpointId === cp.stationId}
-                onClick={() => onSelectCheckpoint(cp.stationId, [cp.latitude, cp.longitude])}
+      {/* Selected route's detail: timeline + charging plan + checkpoint cards */}
+      {selectedRoute && (
+        <div className="space-y-6">
+          <div>
+            <h3 className="mb-1 text-sm font-semibold text-slate-900 dark:text-white">
+              Charging Plan — Route {selectedRoute.ordinal}
+            </h3>
+            {batteryPercentLabel !== null && (
+              <p className="mb-3 text-xs text-slate-600 dark:text-slate-400">
+                Starting battery: {batteryPercentLabel}%. Each stop below assumes a full charge before
+                continuing — E Sakhi Marg doesn&apos;t know how long you&apos;ll actually charge for.
+              </p>
+            )}
+            {selectedRoute.rangeWarning && (
+              <div className="mb-3 flex items-start gap-2 rounded-xl bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>{selectedRoute.rangeWarning}</span>
+              </div>
+            )}
+            {!selectedRoute.hasCompatibleStations && (
+              <div className="mb-3 flex items-start gap-2 rounded-xl bg-slate-50 px-4 py-3 text-xs text-slate-600 dark:bg-slate-900 dark:text-slate-400">
+                <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>No compatible EV charging station was found along this route for the selected connector type. The route is shown below regardless.</span>
+              </div>
+            )}
+            {selectedRoute.hasCompatibleStations && selectedRoute.checkpoints.length === 0 && (
+              <p className="mb-3 text-xs text-slate-600 dark:text-slate-400">
+                This journey is short enough that no charging stop was needed — E Sakhi still shows
+                the complete route below.
+              </p>
+            )}
+            <ol className="relative space-y-0 border-l-2 border-slate-200 pl-5 dark:border-slate-800">
+              <TimelineNode
+                icon="📍"
+                title="START"
+                subtitle={batteryPercentLabel !== null ? `${plan.startLabel} — Battery: ${batteryPercentLabel}%` : plan.startLabel}
               />
-            ))}
+              {selectedRoute.checkpoints.map((cp, index) => (
+                <TimelineSegment key={cp.stationId} distanceKm={cp.distanceFromPreviousKm}>
+                  <TimelineNode
+                    icon="⚡"
+                    title={`CHARGING STOP ${index + 1}`}
+                    subtitle={cp.stationName}
+                    selected={selectedCheckpointId === cp.stationId}
+                    onClick={() => onSelectCheckpoint(cp.stationId, [cp.latitude, cp.longitude])}
+                  />
+                </TimelineSegment>
+              ))}
+              <TimelineSegment distanceKm={selectedRoute.finalLegKm}>
+                <TimelineNode icon="🏁" title="DESTINATION" subtitle={plan.destLabel} isLast />
+              </TimelineSegment>
+            </ol>
           </div>
+
+          {selectedRoute.checkpoints.length > 0 && (
+            <div>
+              <h3 className="mb-3 text-sm font-semibold text-slate-900 dark:text-white">
+                Route {selectedRoute.ordinal} Charging Stations
+              </h3>
+              <div className="space-y-3">
+                {selectedRoute.checkpoints.map((cp, index) => (
+                  <CheckpointCard
+                    key={cp.stationId}
+                    checkpoint={cp}
+                    index={index}
+                    selected={selectedCheckpointId === cp.stationId}
+                    onClick={() => onSelectCheckpoint(cp.stationId, [cp.latitude, cp.longitude])}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
+    </div>
+  );
+}
+
+function RouteCard({
+  route,
+  connectorLabel,
+  viewed,
+  selected,
+  onView,
+  onSelect,
+}: {
+  route: MargRouteOption;
+  connectorLabel: string;
+  viewed: boolean;
+  selected: boolean;
+  onView: () => void;
+  onSelect: () => void;
+}) {
+  const dcAvailable = route.checkpoints.some((cp) => cp.chargingModes.includes("DC"));
+  const acAvailable = route.checkpoints.some((cp) => cp.chargingModes.includes("AC"));
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onView}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") onView();
+      }}
+      className={`w-full cursor-pointer rounded-xl border p-4 text-left transition-colors ${
+        viewed
+          ? "border-emerald-400 bg-emerald-50/60 dark:border-emerald-700 dark:bg-emerald-950/20"
+          : "border-slate-200 bg-white hover:border-emerald-300 dark:border-slate-800 dark:bg-slate-900"
+      }`}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <RouteIcon className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+          <span className="font-semibold text-slate-900 dark:text-white">Route {route.ordinal}</span>
+          {route.isFastest && (
+            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+              Fastest
+            </span>
+          )}
+          {selected && (
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+              Selected Route
+            </span>
+          )}
+        </div>
+      </div>
+
+      <p className="mt-1.5 text-sm text-slate-700 dark:text-slate-300">{route.pathSummary.join(" → ")}</p>
+
+      <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-600 dark:text-slate-400">
+        <span className="flex items-center gap-1">
+          <RouteIcon className="h-3.5 w-3.5" aria-hidden="true" /> {route.totalDistanceKm} km
+        </span>
+        <span className="flex items-center gap-1">
+          <Clock className="h-3.5 w-3.5" aria-hidden="true" /> {formatDuration(route.durationMin)}
+        </span>
+        <span className="flex items-center gap-1">
+          <Zap className="h-3.5 w-3.5" aria-hidden="true" /> {route.checkpoints.length} charging stop
+          {route.checkpoints.length === 1 ? "" : "s"}
+        </span>
+      </div>
+
+      <div className="mt-2">
+        {route.hasCompatibleStations ? (
+          <ul className="space-y-1 text-xs text-emerald-700 dark:text-emerald-400">
+            <li>✓ {route.checkpoints.length} compatible station{route.checkpoints.length === 1 ? "" : "s"} found</li>
+            <li>✓ {connectorLabel}</li>
+            {dcAvailable && <li>✓ DC charging available</li>}
+            {acAvailable && <li>✓ AC charging available</li>}
+          </ul>
+        ) : (
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            No compatible EV charging station found along this route.
+          </p>
+        )}
+        {route.rangeWarning && (
+          <p className="mt-1 flex items-start gap-1 text-xs text-amber-700 dark:text-amber-400">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            Battery range may not cover this whole route.
+          </p>
+        )}
+      </div>
+
+      <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          onClick={onView}
+          className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+        >
+          View Route
+        </button>
+        <button
+          type="button"
+          onClick={onSelect}
+          className={`rounded-md px-3 py-1.5 text-xs font-medium text-white ${
+            selected ? "bg-emerald-700" : "bg-emerald-600 hover:bg-emerald-700"
+          }`}
+        >
+          {selected ? "Selected" : "Select Route"}
+        </button>
+      </div>
     </div>
   );
 }

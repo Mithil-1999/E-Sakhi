@@ -63,6 +63,21 @@ export type MargMapMarker = {
   popup: ReactNode;
 };
 
+/**
+ * One driving option drawn on the map for E Sakhi Marg — up to three at
+ * once (see src/services/marg-service.ts). `selected` picks the styling:
+ * the selected/viewed route is drawn bold and on top in the app's brand
+ * emerald; every other real alternative is dimmed and dashed, in the
+ * same neutral slate already used elsewhere in the app's marker palette
+ * (markerIcons.ts), so multiple routes stay visually distinct without
+ * introducing colors outside the existing design system.
+ */
+export type MargRouteLine = {
+  id: string;
+  geometry: [number, number][];
+  selected: boolean;
+};
+
 export type StationMapProps = {
   markers: StationMapMarker[];
   center: [number, number];
@@ -74,8 +89,8 @@ export type StationMapProps = {
   flyTo?: FlyToTarget | null;
   /** E Sakhi Marg's start/checkpoint/destination stops — see MargMapMarker. */
   margMarkers?: MargMapMarker[];
-  /** E Sakhi Marg's computed driving route, real road-following geometry — never a straight line. */
-  margRoute?: [number, number][] | null;
+  /** Every E Sakhi Marg route option currently on screen, real road-following geometry — never a straight line. */
+  margRoutes?: MargRouteLine[];
   onMargMarkerClick?: (id: string) => void;
   className?: string;
 };
@@ -104,7 +119,7 @@ export function StationMap({
   userPosition,
   flyTo,
   margMarkers,
-  margRoute,
+  margRoutes,
   onMargMarkerClick,
   className,
 }: StationMapProps) {
@@ -145,9 +160,22 @@ export function StationMap({
 
       {userPosition && <Marker position={userPosition} icon={getUserPositionIcon()} />}
 
-      {margRoute && margRoute.length > 1 && (
-        <Polyline positions={margRoute} pathOptions={{ color: "#059669", weight: 4, opacity: 0.85 }} />
-      )}
+      {/* Unselected alternatives drawn first, selected route last, so it
+          always renders on top of the others it's meant to stand out from. */}
+      {margRoutes
+        ?.filter((r) => !r.selected)
+        .map((r) => (
+          <Polyline
+            key={r.id}
+            positions={r.geometry}
+            pathOptions={{ color: "#64748b", weight: 3, opacity: 0.45, dashArray: "6 6" }}
+          />
+        ))}
+      {margRoutes
+        ?.filter((r) => r.selected)
+        .map((r) => (
+          <Polyline key={r.id} positions={r.geometry} pathOptions={{ color: "#059669", weight: 5, opacity: 0.9 }} />
+        ))}
 
       {margMarkers?.map((marker) => (
         <Marker

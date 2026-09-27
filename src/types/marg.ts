@@ -31,11 +31,19 @@ export type MargCheckpoint = {
   status: "ACTIVE" | "INACTIVE";
 };
 
-export type MargRoute = {
-  startLabel: string;
-  destLabel: string;
-  start: { latitude: number; longitude: number };
-  destination: { latitude: number; longitude: number };
+/**
+ * One driving option between the same start/destination — E Sakhi Marg
+ * now plans against every real alternative OSRM offers (up to three),
+ * each with its own checkpoints, rather than a single fixed route.
+ */
+export type MargRouteOption = {
+  id: string;
+  /** 1-based position in the list as returned — "Route 1", "Route 2", ... */
+  ordinal: number;
+  /** True for the route OSRM itself returned first (its own best/default pick) — not a claim that it's "best" for charging. */
+  isFastest: boolean;
+  /** Real place names the route passes near, start to destination, reverse-geocoded from the route's own geometry — never invented. Falls back to just [startLabel, destLabel] when no intermediate name could be resolved. */
+  pathSummary: string[];
   /** The real driving route's path, [latitude, longitude] pairs, in travel order. */
   geometry: [number, number][];
   totalDistanceKm: number;
@@ -43,11 +51,30 @@ export type MargRoute = {
   checkpoints: MargCheckpoint[];
   /** Road distance from the last checkpoint (or the start, if there are none) to the destination, km. */
   finalLegKm: number;
-  connector: string;
-  chargingMode: "AC" | "DC" | null;
+  /** False when no charger on this route matches the requested connector/mode at all — the route is still shown, never hidden. */
+  hasCompatibleStations: boolean;
+  /**
+   * Set only when battery-aware planning (vehicleId/fullRangeKm +
+   * currentBatteryPercent) was requested and this route has a stretch
+   * that can't be reached with a compatible charger before the vehicle's
+   * estimated range would run out — an honest limitation, not an error.
+   */
+  rangeWarning: string | null;
 };
 
-export type MargPlanApiResponse = { data: MargRoute };
+export type MargPlanResult = {
+  startLabel: string;
+  destLabel: string;
+  start: { latitude: number; longitude: number };
+  destination: { latitude: number; longitude: number };
+  connector: string;
+  chargingMode: "AC" | "DC" | null;
+  /** Whether battery-aware checkpoint spacing was actually used (a resolvable vehicle range + battery % were both given). */
+  rangeAware: boolean;
+  routes: MargRouteOption[];
+};
+
+export type MargPlanApiResponse = { data: MargPlanResult };
 
 export type MargGeocodeApiResponse = {
   data: { label: string; latitude: number; longitude: number }[];
